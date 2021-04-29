@@ -9,6 +9,7 @@ Contract for problems/content and staking/rewards, this should come from Problem
 
 Dai needs to be adapter to Disk, where users can claim 1000 Disk a week. 
 need to add state/date management and reward splits.
+need to have content specific tokens.
 */
 contract ProblemNFT is ERC721 {
     using SafeMath for uint256;
