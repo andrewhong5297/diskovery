@@ -3,13 +3,14 @@ const { ethers } = require("hardhat");
 const { abi: abiComp } = require("../artifacts/contracts/Comp.sol/Comp.json");
 const { abi: abiGov } = require("../artifacts/contracts/GovernorBravoDelegate.sol/GovernorBravoDelegate.json");
 const fs = require("fs"); 
+const BN = require('bn.js');
 
 //make sure you've switched defaultnetwork to Kovan and put a mnemonic.txt file in the test folder
-describe("Cities-Protocol Governance v1", function () {
-  let governance, taro, governanceAddress, taroAddress
-  let main
+describe("ProblemNFT v1", function () {
+  let problemNFT, disk
+  let writer, publisher, user, governance
 
-  it("deploy/setup SKALE contracts", async () => {
+  xit("setup Skale", async () => {
     overrides = {
         gasLimit: ethers.BigNumber.from("10000000"),
       };
@@ -22,38 +23,52 @@ describe("Cities-Protocol Governance v1", function () {
 
     // Create Wallet
     main = new ethers.Wallet(privateKey, provider);
-    
-    taro = new ethers.Contract(
-        "0xFf795577d9AC8bD7D90Ee22b6C1703490b6512FD", //set on deploy
-        abiComp,
-        main) 
-    
-    governance = new ethers.Contract(
-      "0xFf795577d9AC8bD7D90Ee22b6C1703490b6512FD", //set on deploy
-      abiComp,
-      main) 
   })
 
-  it("deploy governance and taro", async () => {
-    const Taro = await ethers.getContractFactory(
-       "Comp"
-     );
-    taro = await Taro.connect(main).deploy(main.getAddress()); //mints full supply to deployer
-    await taro.deployed()
-    console.log("taro Address: ", taro.address)
-    taroAddress=taro.address
-  
-    const Governance = await ethers.getContractFactory(
-      "GovernorAlpha"
+  it("setup localhost", async () => {
+    [writer, publisher, user, governance] = await ethers.getSigners(); //jsonrpc signers from default 20 accounts with 10000 ETH each
+
+    //was there anything else to setup? lol
+  })
+
+  it("deploy problemNFT and dai", async () => {
+    const Disk = await ethers.getContractFactory(
+       "Dai"
     );
-    governance = await Governance.connect(main).deploy();  
-    await governance.deployed()
-    console.log("governance Address: ", governance.address)
-    governanceAddress=governance.address
+    disk = await Disk.connect(governance).deploy(ethers.BigNumber.from(0)); //mints full supply to deployer
+    await disk.deployed()
+      
+    let num = -1234;
+    let bytes32 = "0x"+(new BN(String(num))).toTwos(256).toString('hex',64);
+    console.log(bytes32)
+
+    const Problem = await ethers.getContractFactory(
+      "ProblemNFT"
+    );
+    problemNFT = await Problem.connect(governance).deploy(bytes32,disk.address);  
+    await problemNFT.deployed()
   });
 
-  xit("initialize governance",async () => {
-    init_tx = governance.connect(main).init(0,taroAddress,ethers.BigNumber.from(80640),ethers.BigNumber.from(40320),ethers.BigNumber.from(100000e18))
-    await init_tx.wait(1)
+  it("fund user and publisher", async () => {
+    await disk.connect(governance).mint(user.getAddress(), ethers.BigNumber.from((10**20).toLocaleString('fullwide', {useGrouping:false})))
+    await disk.connect(governance).mint(publisher.getAddress(), ethers.BigNumber.from((10**20).toLocaleString('fullwide', {useGrouping:false})))
+  })
+
+  xit("stake problem", async () => {
+  // await problemNFT.
+  });
+
+  //move time forward
+  xit("publish content", async () => {
+
+  })
+
+  xit("user stakes content", async () => {
+
+  })
+
+  //move time forward
+  xit("reward writers/publishers", async () => {
+
   })
 });

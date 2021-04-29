@@ -2,7 +2,7 @@ require("@nomiclabs/hardhat-waffle");
 require("@nomiclabs/hardhat-etherscan");
 const fs = require("fs");
 
-const defaultNetwork = "kovan"; 
+const defaultNetwork = "localhost"; 
 
 function mnemonic() {
   try {
