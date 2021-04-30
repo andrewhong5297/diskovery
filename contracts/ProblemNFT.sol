@@ -7,9 +7,8 @@ import "@openzeppelin/contracts/utils/Counters.sol";
 /*
 Contract for problems/content and staking/rewards, this should come from ProblemFactory which stores and registers all users of certain roles.sol
 
-Dai needs to be adapter to Disk, where users can claim 1000 Disk a week. 
+Dai needs to be adapted to Disk, where users can claim 1000 Disk a week. 
 need to add state/date management and reward splits.
-need to have content specific tokens.
 */
 contract ProblemNFT is ERC721 {
     using SafeMath for uint256;
@@ -17,7 +16,7 @@ contract ProblemNFT is ERC721 {
 
     IERC20 disk; //need to add approval or permit functions, transferFrom in stake functions
     bytes32 problemStatementHash; //used for identifying
-    uint256 totalReward;
+    uint256 public totalReward;
 
     mapping(address => uint256) public communities; //maps to total commitments
     address[] users;
@@ -32,8 +31,12 @@ contract ProblemNFT is ERC721 {
     uint256 MIN_EXPIRY = 80640; //two weeks
     uint256 MAX_EXPIRY = 80640 * 2; //a month
 
+    uint256 EXPIRY;
+    uint256 writingStart;
+
     Counters.Counter private _tokenIds;
 
+    //content related events/variables
     event NewContent(
         uint256 contentId,
         string articleName,
@@ -43,13 +46,13 @@ contract ProblemNFT is ERC721 {
 
     struct Content {
         string name;
-        bytes32 contentHash;
+        bytes32 contentHash; // do we really need content hash?
     }
 
     mapping(uint256 => mapping(address => address))
         public contentWriterPublisher;
 
-    mapping(uint256 => mapping(address => uint256)) public contentUser; //track user deposit per content
+    mapping(uint256 => mapping(address => uint256)) public contentUserStake; //track user deposit per content, where first uint is the content id?
 
     Content[] public all_content;
 
@@ -61,43 +64,85 @@ contract ProblemNFT is ERC721 {
         currentState = ProblemState.STAKING;
         problemStatementHash = _problemStatementHash;
         disk = IERC20(disk_implementation);
+        EXPIRY = 50000; //this should be passed in constructor later
+    }
+
+    //modifiers
+    modifier checkState(ProblemState state) {
+        if (state == ProblemState.STAKING) {
+            require(
+                currentState == ProblemState.STAKING,
+                "Staking period has already ended"
+            );
+            _;
+        }
+
+        if (state == ProblemState.WRITING) {
+            if (currentState == ProblemState.STAKING) {
+                revert("Writing period has not started");
+            } else if (currentState == ProblemState.REWARDED) {
+                revert(
+                    "Writing period has already ended and rewards distributed"
+                );
+            } else {
+                _;
+            }
+        }
+
+        if (state == ProblemState.REWARDED) {
+            require(
+                currentState == ProblemState.REWARDED,
+                "Writing period has not yet ended"
+            );
+            _;
+        }
+    }
+
+    modifier checkExpiry(bool state) {
+        if (state) {
+            require(
+                block.timestamp <= writingStart + EXPIRY,
+                "writing period has ended"
+            );
+            _;
+        }
+        if (state == false) {
+            require(
+                block.timestamp >= writingStart + EXPIRY,
+                "writing period has not ended"
+            );
+            _;
+        }
     }
 
     //staking state functions
-    function stakeProblem(uint256 _amount) public {
+    function stakeProblem(uint256 _amount)
+        external
+        checkState(ProblemState.STAKING)
+    {
         //should somehow track all communities, users, and writers in another smart contract.
         //add deposit to overall reward pie
         totalReward += _amount;
         communities[msg.sender] += _amount;
     }
 
-    //writing state functions
-    function stakeContent(uint256 _amount, uint256 _contentId) public {
-        require(
-            communities[msg.sender] == 0,
-            "Is a staked community, can't stake article"
-        );
-        require(
-            contentWriterPublisher[_contentId][msg.sender] == address(0),
-            "Writer cannot stake their own article"
-        );
-        contentUser[_contentId][msg.sender] += _amount;
-        //should this be transferred to writer or community right away?
+    function endStaking() external checkState(ProblemState.STAKING) {
+        // require(totalReward >= 10**20, "not enough rewards yet for writers");
+        currentState = ProblemState.WRITING;
+        writingStart = block.timestamp; //start writing counter
     }
 
+    //writing state functions
     function newContent(
         address _writer,
         string calldata _name,
         bytes32 _contentHash
-    ) external returns (bool) {
-        require(
-            currentState == ProblemState.WRITING,
-            "Staking period has not ended yet"
-        );
+    ) external checkState(ProblemState.WRITING) returns (bool) {
         require(
             communities[msg.sender] >= 0,
             "Not a staked community, can't publish"
         );
+        //add check that (block.timestamp <= writingStart + EXPIRY)
 
         all_content.push(Content(_name, _contentHash));
         _tokenIds.increment();
@@ -110,17 +155,34 @@ contract ProblemNFT is ERC721 {
         return true;
     }
 
-    //reward state functions
-    function rewardSplit() external returns (bool) {
+    function stakeContent(uint256 _amount, uint256 _contentId) public {
         require(
-            currentState != ProblemState.REWARDED,
-            "rewards already paid out"
+            communities[msg.sender] == 0,
+            "Sender is a staked community, can't stake article"
         );
+        require(
+            contentWriterPublisher[_contentId][msg.sender] == address(0),
+            "Writer cannot stake their own article"
+        );
+        //add check that (block.timestamp <= writingStart + EXPIRY)
 
-        //split total deposit by ranking of tokenId => contentUser, can just call transfer here
+        contentUserStake[_contentId][msg.sender] += _amount;
+        //should this be transferred to writer or community right away?
+    }
+
+    //reward state functions
+    function rewardSplit()
+        external
+        checkState(ProblemState.WRITING)
+        returns (bool)
+    {
+        //add check that (block.timestamp >= writingStart + EXPIRY), i.e. writing time has expired
+
+        //split total deposit by ranking of tokenId => contentUserStake, can just call transfer here
         //calculate_rewards
         //for reward in calculate_reards: disk.transfer(address, reward)
 
+        currentState = ProblemState.REWARDED;
         return true;
     }
 }

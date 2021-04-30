@@ -287,8 +287,8 @@
       ]
     },
     "C:\\Users\\Andrew\\Documents\\Blockchain\\diskovery\\contracts\\ProblemNFT.sol": {
-      "lastModificationDate": 1619734564923,
-      "contentHash": "f6d1a8acbf805b602ec50ffe25034ae9",
+      "lastModificationDate": 1619796189297,
+      "contentHash": "ae642a347eeee970d7e8703672871902",
       "sourceName": "contracts/ProblemNFT.sol",
       "solcConfig": {
         "version": "0.7.0",
@@ -854,6 +854,76 @@
       ],
       "artifacts": [
         "IERC165"
+      ]
+    },
+    "C:\\Users\\Andrew\\Documents\\Blockchain\\diskovery\\contracts\\AllRegistry.sol": {
+      "lastModificationDate": 1619793364741,
+      "contentHash": "e9e0c7faf5f9bfdaf35f03947b5c5da7",
+      "sourceName": "contracts/AllRegistry.sol",
+      "solcConfig": {
+        "version": "0.6.12",
+        "settings": {
+          "optimizer": {
+            "enabled": false,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        "^0.6.0"
+      ],
+      "artifacts": [
+        "AllRegistry"
+      ]
+    },
+    "C:\\Users\\Andrew\\Documents\\Blockchain\\diskovery\\contracts\\StartProblem.sol": {
+      "lastModificationDate": 1619795718535,
+      "contentHash": "ba2e28ace1c3da25338633213377ed26",
+      "sourceName": "contracts/StartProblem.sol",
+      "solcConfig": {
+        "version": "0.7.0",
+        "settings": {
+          "optimizer": {
+            "enabled": false,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [
+        "./ProblemNFT.sol"
+      ],
+      "versionPragmas": [
+        ">=0.6.0"
+      ],
+      "artifacts": [
+        "StartProblem"
       ]
     }
   }
