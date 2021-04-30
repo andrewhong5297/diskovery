@@ -5,10 +5,11 @@ import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
 
 /*
-Contract for problems/content and staking/rewards, this should come from ProblemFactory which stores and registers all users of certain roles.sol
+Contract for problems/content and staking/rewards, deployed by registered publisher from startproblem.sol
 
-Dai needs to be adapted to Disk, where users can claim 1000 Disk a week. 
-need to add state/date management and reward splits.
+to do:
+Dai needs to be adapted to Disk, where users can claim 1000 Disk a week. (maybe handled in registry)
+still need to add token transfers and reward splits.
 */
 contract ProblemNFT is ERC721 {
     using SafeMath for uint256;

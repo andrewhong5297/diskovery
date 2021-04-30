@@ -1,5 +1,9 @@
-//stores all users and roles, and if they have claimed this week yet or not.
 pragma solidity ^0.6.0;
+
+import "./PubDAO.sol"
+
+//stores all users and roles, and if they have claimed this week yet or not.
+//this requires a new DAO structure, so we can check if it is a dao or not (i.e. DAO(address))
 
 contract AllRegistry {
     mapping(address => bool) public pubRegistry;

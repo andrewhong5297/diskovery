@@ -287,8 +287,8 @@
       ]
     },
     "C:\\Users\\Andrew\\Documents\\Blockchain\\diskovery\\contracts\\ProblemNFT.sol": {
-      "lastModificationDate": 1619796189297,
-      "contentHash": "ae642a347eeee970d7e8703672871902",
+      "lastModificationDate": 1619796746485,
+      "contentHash": "c727418bd202ca085a6ad45c1cc2d65d",
       "sourceName": "contracts/ProblemNFT.sol",
       "solcConfig": {
         "version": "0.7.0",
@@ -857,8 +857,8 @@
       ]
     },
     "C:\\Users\\Andrew\\Documents\\Blockchain\\diskovery\\contracts\\AllRegistry.sol": {
-      "lastModificationDate": 1619793364741,
-      "contentHash": "e9e0c7faf5f9bfdaf35f03947b5c5da7",
+      "lastModificationDate": 1619797345653,
+      "contentHash": "965cecf78461631283bfe6b77a892bd9",
       "sourceName": "contracts/AllRegistry.sol",
       "solcConfig": {
         "version": "0.6.12",
@@ -891,8 +891,8 @@
       ]
     },
     "C:\\Users\\Andrew\\Documents\\Blockchain\\diskovery\\contracts\\StartProblem.sol": {
-      "lastModificationDate": 1619795718535,
-      "contentHash": "ba2e28ace1c3da25338633213377ed26",
+      "lastModificationDate": 1619797122665,
+      "contentHash": "ec120f8e74aadcfab1b113b613fa42d6",
       "sourceName": "contracts/StartProblem.sol",
       "solcConfig": {
         "version": "0.7.0",

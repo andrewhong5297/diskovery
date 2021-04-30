@@ -1,0 +1,2 @@
+//this requires a new DAO structure, so we can check if it is a dao or not (i.e. DAO(address))
+//fill this out after checking with Suhana, since content will probably be submitted here as a proposal. same as problem. 

@@ -23,6 +23,7 @@ contract StartProblem {
 
     /*
     this function should be called by any pub in the registry
+    we may want this to be a minimal proxy later instead... 
     */
     function deployNewProblem(bytes32 _hash) external returns (address) {
         require(
