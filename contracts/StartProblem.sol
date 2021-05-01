@@ -2,22 +2,33 @@
 pragma solidity >=0.6.0;
 
 import "./ProblemNFT.sol";
+import "@openzeppelin/contracts/math/SafeMath.sol";
 
 // import "./AllRegistry.sol"; add interface later
 
 contract StartProblem {
-    //how to store problem queue (should there be a problem queue? does problem need to have a minimum stake before NFT is deployed? Should stake be in disk or USDC?
+    using SafeMath for uint256;
+
     address disk;
     // AllRegistry reg;
 
-    mapping(bytes32 => address) public hashToProblem;
-    // ProblemNFT[] public problems;
+    // ProblemNFT[] public problems; //not sure if this is better to have, or if we just save space without this array and get function.
+    mapping(bytes32 => address) public deployedProblem;
+    mapping(bytes32 => address[]) public problemCommunities;
 
-    event NewProblem(
-        //remember you already set up theGraph for this
-        bytes32 problemHash,
-        address creator
-    );
+    event NewProblem(bytes32 problemHash, address creator);
+
+    event NewStake(bytes32 problemHash, address community, uint256 amount);
+
+    event NewProblemDeployed(bytes32 problemHash, address deployedAddress);
+
+    struct Problem {
+        bytes32 problemHash;
+        uint256 totalReward;
+        bool deployed;
+    }
+
+    mapping(bytes32 => Problem) newProblems;
 
     constructor(address _disk, address _reg) {
         disk = _disk;
@@ -25,23 +36,62 @@ contract StartProblem {
     }
 
     /*
+    pre_deploy functions
+    */
+    function createProblem(bytes32 _hash) external {
+        require(
+            newProblems[_hash].problemHash == 0,
+            "problem has been created already"
+        );
+        //require this to be community
+        //burn a problem token
+        newProblems[_hash] = Problem(_hash, 0, false);
+        emit NewProblem(_hash, msg.sender);
+    }
+
+    //add some priced token as deposit to overall reward
+    function stakeProblem(bytes32 _hash, uint256 _amount) external payable {
+        require(
+            newProblems[_hash].problemHash != 0,
+            "problem has not been created yet"
+        );
+        require(
+            deployedProblem[_hash] == address(0),
+            "problem already deployed, go stake on the contract"
+        );
+
+        //require msg.sender to be community
+
+        newProblems[_hash].totalReward = newProblems[_hash].totalReward.add(
+            _amount
+        );
+        problemCommunities[_hash].push(msg.sender);
+        emit NewStake(_hash, msg.sender, _amount);
+
+        //check if minimum stake was met, if so then deployNewProblem.
+        if (newProblems[_hash].totalReward >= 2000) {
+            deployNewProblem(_hash);
+        }
+    }
+
+    /*
     this function should be called by any pub in the registry
     */
-    function deployNewProblem(bytes32 _hash) external returns (address) {
-        require(
-            hashToProblem[_hash] == address(0),
-            "This problem has been created already"
-        );
-        //require(reg.pubRegistry[msg.sender]==true,"not a publication, can't submit a problem");
-        //burn a problem token, revert if this fails
-
+    function deployNewProblem(bytes32 _hash) internal returns (address) {
         //add CREATE2 in here later
-        ProblemNFT newProblem = new ProblemNFT(_hash, disk);
-        hashToProblem[_hash] = address(newProblem);
+        ProblemNFT newProblem =
+            new ProblemNFT(
+                _hash,
+                disk,
+                newProblems[_hash].totalReward,
+                problemCommunities[_hash]
+            );
+        deployedProblem[_hash] = address(newProblem);
         // problems.push(newProblem);
 
-        emit NewProblem(_hash, msg.sender);
+        //transfer ETH or whatever from this contract to address(newProblem);
 
+        emit NewProblemDeployed(_hash, address(newProblem));
         return address(newProblem);
     }
 
@@ -55,6 +105,10 @@ contract StartProblem {
         view
         returns (address problemAddress)
     {
-        return hashToProblem[_hash];
+        require(
+            deployedProblem[_hash] != address(0),
+            "problem not deployed yet"
+        );
+        return deployedProblem[_hash];
     }
 }

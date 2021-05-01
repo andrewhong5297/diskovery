@@ -11,7 +11,7 @@ import "hardhat/console.sol";
 // import "./AllRegistry.sol"; this should be an interface later
 
 /*
-Contract for problems/content and staking/rewards, deployed by registered publisher from startproblem.sol
+Contract for problems/content and staking/rewards, deployed by registered community from startproblem.sol
 
 ------
 to do:
@@ -26,17 +26,11 @@ contract ProblemNFT is ERC721 {
     IERC20 disk; //need to add approval or permit functions, transferFrom in stake functions
     bytes32 problemStatementHash; //used for identifying this problem
     uint256 public totalReward;
-
-    mapping(address => uint256) public communities; //maps to total commitments to problems
-
-    //affects what functions are allowed
-    enum ProblemState {STAKING, WRITING, REWARDED}
-    ProblemState currentState;
+    mapping(address => bool) public communities; //maps to total commitments to problems
 
     //starting options to add in constructor
     uint256 MIN_EXPIRY = 80640; //two weeks
     uint256 MAX_EXPIRY = 80640 * 2; //a month
-
     uint256 EXPIRY;
     uint256 writingStart;
 
@@ -53,59 +47,36 @@ contract ProblemNFT is ERC721 {
     struct Content {
         string name;
         address writer;
+        address community;
         bytes32 contentHash; // IPFS or arweave hash here
         uint256 contentReward;
         bool rewardClaimed;
     }
 
-    mapping(address => address) public writerPublisher;
     mapping(address => uint256) public writerContent;
     mapping(uint256 => mapping(address => uint256)) public contentUserStake; //track user deposit per content, where first uint is the content id?
 
     Content[] public all_content;
-    uint256 totalUserStaked; //tracks total stake per content
+    uint256 totalUserStaked;
+    bool rewardsCalculated = false;
 
-    constructor(bytes32 _problemStatementHash, address disk_implementation)
-        public
-        ERC721("Problem Set", "PS")
-    {
-        currentState = ProblemState.STAKING;
+    constructor(
+        bytes32 _problemStatementHash,
+        address disk_implementation,
+        uint256 _totalReward,
+        address[] memory _communities
+    ) public ERC721("Problem Set", "PS") {
         problemStatementHash = _problemStatementHash;
         disk = IERC20(disk_implementation);
         EXPIRY = 50000; //this should be passed in constructor later
+        writingStart = block.timestamp; //start writing counter 2 days late?
+        totalReward = _totalReward;
+        for (uint256 i = 0; i < _communities.length; i++) {
+            communities[_communities[i]] = true;
+        }
     }
 
     //modifiers
-    modifier checkState(ProblemState state) {
-        if (state == ProblemState.STAKING) {
-            require(
-                currentState == ProblemState.STAKING,
-                "Staking period has already ended"
-            );
-            _;
-        }
-
-        if (state == ProblemState.WRITING) {
-            if (currentState == ProblemState.STAKING) {
-                revert("Writing period has not started");
-            } else if (currentState == ProblemState.REWARDED) {
-                revert(
-                    "Writing period has already ended and rewards distributed"
-                );
-            } else {
-                _;
-            }
-        }
-
-        if (state == ProblemState.REWARDED) {
-            require(
-                currentState == ProblemState.REWARDED,
-                "Writing period has not yet ended"
-            );
-            _;
-        }
-    }
-
     modifier checkExpiry(bool state) {
         if (state) {
             require(
@@ -123,25 +94,12 @@ contract ProblemNFT is ERC721 {
         }
     }
 
-    /*
-    staking state functions
-    */
-
-    //add some priced token as deposit to overall reward
-    function stakeProblem(uint256 _amount)
-        external
-        payable
-        checkState(ProblemState.STAKING)
-    {
-        totalReward = totalReward.add(_amount);
-        communities[msg.sender] = communities[msg.sender].add(_amount); //this works if only communities can send
-        //does payable handle the ETH sent or do I need to recieve it?
-    }
-
-    function endStaking() external checkState(ProblemState.STAKING) {
-        // require(totalReward >= 10**20, "not enough rewards yet for writers");
-        currentState = ProblemState.WRITING;
-        writingStart = block.timestamp; //start writing counter
+    //function that allows anyone to add to totalReward anytime before expiry
+    function addStake(uint256 _amount) external {
+        //transferFrom and check balance before calling this
+        //check if msg.sender is part of pubdaos mapping
+        communities[msg.sender] = true;
+        totalReward = totalReward.add(_amount); //or msg.value if we make this payable
     }
 
     /*
@@ -151,34 +109,31 @@ contract ProblemNFT is ERC721 {
         address _writer,
         string calldata _name,
         bytes32 _contentHash
-    ) external checkState(ProblemState.WRITING) returns (bool) {
+    ) external returns (bool) {
         //add check that (block.timestamp <= writingStart + EXPIRY)
+        require(communities[msg.sender] == true, "Community did not stake");
         require(
-            communities[msg.sender] >= 0,
-            "Not a staked community, can't publish"
-        );
-        require(
-            writerPublisher[_writer] == address(0),
-            "Has already published once"
+            writerContent[_writer] == 0,
+            "Writer has already published once"
         );
         //burn content token
+        _tokenIds.increment();
         _safeMint(_writer, _tokenIds.current());
 
-        writerPublisher[_writer] = msg.sender;
-        all_content.push(Content(_name, _writer, _contentHash, 0, false));
+        all_content.push(
+            Content(_name, _writer, msg.sender, _contentHash, 0, false)
+        );
         writerContent[_writer] = _tokenIds.current();
 
         emit NewContent(_tokenIds.current(), _name, _writer, msg.sender);
-        _tokenIds.increment();
-
         return true;
     }
 
     function stakeContent(uint256 _amount, uint256 _contentId) public {
-        require(
-            communities[msg.sender] == 0,
-            "Sender is a staked community, can't stake article"
-        );
+        // require(
+        //     all_content[_contentId].community != msg.sender,
+        //     "community cannot stake their own article"
+        // );
         require(
             writerContent[msg.sender] != _contentId,
             "Writer cannot stake their own article"
@@ -191,12 +146,13 @@ contract ProblemNFT is ERC721 {
         ]
             .add(_amount);
 
-        console.log(all_content[_contentId].contentReward);
-        // all_content[0].contentReward = all_content[0].contentReward.add(
-        //     _amount
-        // ); //come back to debug this
+        all_content[0].contentReward = all_content[0].contentReward.add(
+            _amount
+        ); //come back to debug this
         totalUserStaked = totalUserStaked.add(_amount);
 
+        console.log(_contentId);
+        console.log(all_content[0].contentReward);
         //this should be transferred to writer and community right away
         //need an event added here
     }
@@ -204,36 +160,42 @@ contract ProblemNFT is ERC721 {
     /*
     reward state functions
     */
-    // function rewardSplit()
-    //     external
-    //     checkState(ProblemState.WRITING)
-    //     returns (bool)
-    // {
-    //     //add checkExpiry after testing
-    //     for (uint256 i = 0; i < all_content.length; i++) {
-    //         all_content[i].contentReward.div(totalUserStaked).mul(totalReward);
-    //     }
 
-    //     currentState = ProblemState.REWARDED;
-    //     return true;
-    // }
+    ///@notice normalizes content stakes, then allocates totalReward.
+    function rewardSplit() external {
+        //add checkExpiry after testing
+        require(rewardsCalculated == false, "rewards already calculated");
+        for (uint256 i = 0; i < all_content.length; i++) {
+            console.log("pre update: ", all_content[i].name);
+            console.log("pre update: ", all_content[i].contentReward);
+            all_content[i].contentReward = all_content[i]
+                .contentReward
+                .div(totalUserStaked)
+                .mul(totalReward);
+            console.log("post update: ", all_content[i].contentReward);
+        }
+        rewardsCalculated = true;
+    }
 
-    // function claimWinnings()
-    //     external
-    //     checkState(ProblemState.REWARDED)
-    //     returns (uint256 transferAmount)
-    // {
-    //     uint256 contentId = writerContent[msg.sender];
-    //     require(
-    //         all_content[contentId].rewardClaimed == false,
-    //         "reward already claimed"
-    //     );
+    function claimWinnings() external returns (uint256 transferAmount) {
+        //add expiryCheck
+        require(
+            rewardsCalculated == true,
+            "rewards need to be calculated first"
+        );
+        uint256 contentId = writerContent[msg.sender];
+        require(
+            all_content[contentId].rewardClaimed == false,
+            "reward already claimed"
+        );
 
-    //     transferAmount = all_content[contentId].contentReward;
-    //     all_content[contentId].rewardClaimed = true;
+        transferAmount = all_content[contentId.sub(1)].contentReward;
+        all_content[contentId.sub(1)].rewardClaimed = true;
 
-    //     //transfer from contract to msg.sender after checking their winning mapping.
-    // }
+        console.log("sent to writer: ", transferAmount);
+
+        //transfer from contract to msg.sender after checking their winning mapping.
+    }
 
     /* 
     view functions
@@ -242,7 +204,7 @@ contract ProblemNFT is ERC721 {
         content = all_content;
     }
 
-    //     function getContentCount() external view returns (uint256 count) {
-    //         count = all_content.length;
-    //     }
+    function getContentCount() external view returns (uint256 count) {
+        count = all_content.length;
+    }
 }
