@@ -2,15 +2,16 @@
 pragma solidity >=0.6.0;
 
 import "./ProblemNFT.sol";
-import "./AllRegistry.sol";
+
+// import "./AllRegistry.sol"; add interface later
 
 contract StartProblem {
     //how to store problem queue (should there be a problem queue? does problem need to have a minimum stake before NFT is deployed? Should stake be in disk or USDC?
     address disk;
-    AllRegistry reg;
+    // AllRegistry reg;
 
     mapping(bytes32 => address) public hashToProblem;
-    ProblemNFT[] public problems;
+    // ProblemNFT[] public problems;
 
     event NewProblem(
         //remember you already set up theGraph for this
@@ -20,12 +21,11 @@ contract StartProblem {
 
     constructor(address _disk, address _reg) {
         disk = _disk;
-        reg = AllRegistry(_reg);
+        // reg = AllRegistry(_reg);
     }
 
     /*
     this function should be called by any pub in the registry
-    we may want this to be a minimal proxy later instead... 
     */
     function deployNewProblem(bytes32 _hash) external returns (address) {
         require(
@@ -38,7 +38,7 @@ contract StartProblem {
         //add CREATE2 in here later
         ProblemNFT newProblem = new ProblemNFT(_hash, disk);
         hashToProblem[_hash] = address(newProblem);
-        problems.push(newProblem);
+        // problems.push(newProblem);
 
         emit NewProblem(_hash, msg.sender);
 

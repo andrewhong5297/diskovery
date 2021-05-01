@@ -6,8 +6,6 @@ import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
 
-import "hardhat/console.sol";
-
 // import "./AllRegistry.sol"; this should be an interface later
 
 /*
@@ -59,10 +57,10 @@ contract ProblemNFT is ERC721 {
     }
 
     mapping(address => address) public writerPublisher;
-    mapping(address => uint256) public writerContent;
-    mapping(uint256 => mapping(address => uint256)) public contentUserStake; //track user deposit per content, where first uint is the content id?
+    mapping(bytes32 => Content) public allContents;
+    mapping(bytes32 => mapping(address => uint256)) public contentUserStake; //track user deposit per content, where first bytes32 is contentHash
 
-    Content[] public all_content;
+    // Content[] public all_content;
     uint256 totalUserStaked; //tracks total stake per content
 
     constructor(bytes32 _problemStatementHash, address disk_implementation)
@@ -147,11 +145,11 @@ contract ProblemNFT is ERC721 {
     /*
     writing state functions
     */
-    function newContent(
-        address _writer,
-        string calldata _name,
-        bytes32 _contentHash
-    ) external checkState(ProblemState.WRITING) returns (bool) {
+    function newContent(address _writer, string calldata _name)
+        external
+        checkState(ProblemState.WRITING)
+        returns (bytes32 _contentHash)
+    {
         //add check that (block.timestamp <= writingStart + EXPIRY)
         require(
             communities[msg.sender] >= 0,
@@ -161,40 +159,43 @@ contract ProblemNFT is ERC721 {
             writerPublisher[_writer] == address(0),
             "Has already published once"
         );
+        bytes32 _contentHash =
+            keccak256(abi.encodePacked(_writer, _name, msg.sender));
+
         //burn content token
-        _safeMint(_writer, _tokenIds.current());
+        _safeMint(_writer, _contentHash); //important for tokenomics
 
         writerPublisher[_writer] = msg.sender;
-        all_content.push(Content(_name, _writer, _contentHash, 0, false));
-        writerContent[_writer] = _tokenIds.current();
+        allContents[_contentHash] = Content(
+            _name,
+            _writer,
+            _contentHash,
+            0,
+            false
+        );
 
-        emit NewContent(_tokenIds.current(), _name, _writer, msg.sender);
-        _tokenIds.increment();
-
-        return true;
+        emit NewContent(_contentHash, _name, _writer, msg.sender);
     }
 
-    function stakeContent(uint256 _amount, uint256 _contentId) public {
+    function stakeContent(uint256 _amount, bytes32 _contentHash) public {
         require(
             communities[msg.sender] == 0,
             "Sender is a staked community, can't stake article"
         );
         require(
-            writerContent[msg.sender] != _contentId,
+            allContents[_contentHash].writer != msg.sender,
             "Writer cannot stake their own article"
         );
         //add checkExpiry after testing
 
         //check that total user stake is not > 5000,
-        contentUserStake[_contentId][msg.sender] = contentUserStake[_contentId][
-            msg.sender
-        ]
+        contentUserStake[_contentHash][msg.sender] = contentUserStake[
+            _contentHash
+        ][msg.sender]
             .add(_amount);
-
-        console.log(all_content[_contentId].contentReward);
-        // all_content[0].contentReward = all_content[0].contentReward.add(
-        //     _amount
-        // ); //come back to debug this
+        allContents[_contentHash].contentReward = allContents[_contentHash]
+            .contentReward
+            .add(_amount); //come back to debug this
         totalUserStaked = totalUserStaked.add(_amount);
 
         //this should be transferred to writer and community right away
@@ -238,8 +239,12 @@ contract ProblemNFT is ERC721 {
     /* 
     view functions
     */
-    function getContent() external view returns (Content[] memory content) {
-        content = all_content;
+    function getContent(bytes32 _contentHash)
+        external
+        view
+        returns (Content memory content)
+    {
+        content = allContents[_contentHash];
     }
 
     //     function getContentCount() external view returns (uint256 count) {

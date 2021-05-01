@@ -9,7 +9,7 @@ const BN = require('bn.js');
 describe("ProblemNFT v1", function () {
   let problemNFT, disk, startProblem;
   let docHash;
-  let writer, publisher, user, governance;
+  let writer1, writer2, publisher, user, governance;
 
   xit("setup Skale", async () => {
     overrides = {
@@ -27,7 +27,7 @@ describe("ProblemNFT v1", function () {
   })
 
   it("setup localhost", async () => {
-    [writer, publisher, user, governance] = await ethers.getSigners(); //jsonrpc signers from default 20 accounts with 10000 ETH each
+    [writer1, writer2, publisher, user, governance] = await ethers.getSigners(); //jsonrpc signers from default 20 accounts with 10000 ETH each
     //was there anything else to setup here? lol
   })
 
@@ -75,19 +75,25 @@ describe("ProblemNFT v1", function () {
     await expect(problemNFT.connect(governance).stakeProblem(ethers.BigNumber.from("10000"))).to.be.revertedWith("Staking period has already ended");
   })
 
-  it("publish content", async () => {
+  it("publish 2 pieces of content", async () => {
     const num = 1559;
     const contentHash = "0x"+(new BN(String(num))).toTwos(256).toString('hex',64);
-    await problemNFT.connect(publisher).newContent(writer.getAddress(),"Into the Ether",contentHash)
+    await problemNFT.connect(publisher).newContent(writer1.getAddress(),"Into the Ether",contentHash)
 
-    const balance = await problemNFT.balanceOf(writer.getAddress())
-    console.log("writer NFT: " + balance)
+    const num2 = 2059;
+    const contentHash2 = "0x"+(new BN(String(num2))).toTwos(256).toString('hex',64);
+    await problemNFT.connect(publisher).newContent(writer2.getAddress(),"Out of the Ether",contentHash2)
+
+    const balance = await problemNFT.balanceOf(writer1.getAddress())
+    expect(parseInt(balance.toString())).to.equal(1)
 
     const content = await problemNFT.getContent() //do we want to return the struct or just an array?
-    console.log(content.toString())
+    // console.log(content)
   })
 
-  xit("user stakes content", async () => {
+  it("user stakes content", async () => {
+    await problemNFT.connect(user).stakeContent(ethers.BigNumber.from("1000"),ethers.BigNumber.from("1"))
+    await problemNFT.connect(user).stakeContent(ethers.BigNumber.from("500"),ethers.BigNumber.from("2"))
 
   })
 
