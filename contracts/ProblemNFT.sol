@@ -15,8 +15,10 @@ Contract for problems/content and staking/rewards, deployed by registered commun
 
 ------
 to do:
+math for fractions/percentage calculations on rewards
 after DAO and Registry, come back and add token transfers and reward in ERC20 (tbd if set to USDC or native token ETH/Matic/whatever it is). 
-options on maximum user stake and expiry
+add constructor options on maximum user stake and expiry
+add registry, and burn content tokens
 */
 contract ProblemNFT is ERC721 {
     using SafeMath for uint256;
@@ -167,20 +169,11 @@ contract ProblemNFT is ERC721 {
         for (uint256 i = 0; i < all_content.length; i++) {
             console.log("pre update: ", all_content[i].name);
             console.log("pre update: ", all_content[i].contentReward);
-            console.log(
-                "after divide: ",
-                all_content[i].contentReward.div(totalUserStaked)
+            all_content[i].contentReward = mulDiv(
+                all_content[i].contentReward,
+                totalReward,
+                totalUserStaked
             );
-            console.log(
-                "after multiply: ",
-                all_content[i].contentReward.div(totalUserStaked).mul(
-                    totalReward
-                )
-            );
-            all_content[i].contentReward = all_content[i]
-                .contentReward
-                .div(totalUserStaked)
-                .mul(totalReward);
             console.log("post update: ", all_content[i].contentReward);
         }
         rewardsCalculated = true;
@@ -215,5 +208,42 @@ contract ProblemNFT is ERC721 {
 
     function getContentCount() external view returns (uint256 count) {
         count = all_content.length;
+    }
+
+    function fullMul(uint256 x, uint256 y)
+        public
+        pure
+        returns (uint256 l, uint256 h)
+    {
+        uint256 mm = mulmod(x, y, uint256(-1));
+        l = x * y;
+        h = mm - l;
+        if (mm < l) h -= 1;
+    }
+
+    function mulDiv(
+        uint256 x,
+        uint256 y,
+        uint256 z
+    ) public pure returns (uint256) {
+        (uint256 l, uint256 h) = fullMul(x, y);
+        require(h < z);
+        uint256 mm = mulmod(x, y, z);
+        if (mm > l) h -= 1;
+        l -= mm;
+        uint256 pow2 = z & -z;
+        z /= pow2;
+        l /= pow2;
+        l += h * ((-pow2) / pow2 + 1);
+        uint256 r = 1;
+        r *= 2 - z * r;
+        r *= 2 - z * r;
+        r *= 2 - z * r;
+        r *= 2 - z * r;
+        r *= 2 - z * r;
+        r *= 2 - z * r;
+        r *= 2 - z * r;
+        r *= 2 - z * r;
+        return l * r;
     }
 }

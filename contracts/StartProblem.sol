@@ -6,6 +6,8 @@ import "@openzeppelin/contracts/math/SafeMath.sol";
 
 // import "./AllRegistry.sol"; add interface later
 
+//add registry, and burn tokens
+
 contract StartProblem {
     using SafeMath for uint256;
 

@@ -54,7 +54,6 @@ describe("ProblemNFT v1", function () {
     await startProblem.connect(publisher).stakeProblem(docHash,ethers.BigNumber.from("3000"))
 
     const problemAddress = await startProblem.getProblem(docHash)
-    console.log(problemAddress)
     problemNFT = new ethers.Contract(
       problemAddress,
       abiProblem,
