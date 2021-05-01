@@ -287,8 +287,8 @@
       ]
     },
     "C:\\Users\\Andrew\\Documents\\Blockchain\\diskovery\\contracts\\ProblemNFT.sol": {
-      "lastModificationDate": 1619830989838,
-      "contentHash": "d32a2f64ab0bb02199ca0d662606df1f",
+      "lastModificationDate": 1619893084477,
+      "contentHash": "651722f4f70465937de213872b9233ca",
       "sourceName": "contracts/ProblemNFT.sol",
       "solcConfig": {
         "version": "0.7.0",
@@ -316,6 +316,7 @@
         "@openzeppelin/contracts/token/ERC20/IERC20.sol",
         "@openzeppelin/contracts/token/ERC721/ERC721.sol",
         "@openzeppelin/contracts/utils/Counters.sol",
+        "@openzeppelin/contracts/math/SafeMath.sol",
         "./AllRegistry.sol"
       ],
       "versionPragmas": [
@@ -931,8 +932,8 @@
       ]
     },
     "C:\\Users\\Andrew\\Documents\\Blockchain\\diskovery\\contracts\\PubDAO.sol": {
-      "lastModificationDate": 1619830731982,
-      "contentHash": "4e5f316960b1b8501c3b47a6aee88584",
+      "lastModificationDate": 1619893211185,
+      "contentHash": "de32da766bd2a98c79c69b2a5efa8053",
       "sourceName": "contracts/PubDAO.sol",
       "solcConfig": {
         "version": "0.7.0",

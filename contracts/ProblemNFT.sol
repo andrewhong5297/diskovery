@@ -4,14 +4,16 @@ pragma experimental ABIEncoderV2;
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
+import "@openzeppelin/contracts/math/SafeMath.sol";
+
 import "./AllRegistry.sol";
 
 /*
 Contract for problems/content and staking/rewards, deployed by registered publisher from startproblem.sol
 
 to do:
-Dai needs to be adapted to Disk, where users can claim 1000 Disk a week. (maybe handled in registry)
-still need to add token transfers and reward splits.
+still need to add token transfers and reward splits. 
+options on maximum user stake and minimum ETH stake.
 */
 contract ProblemNFT is ERC721 {
     using SafeMath for uint256;
@@ -48,7 +50,7 @@ contract ProblemNFT is ERC721 {
 
     struct Content {
         string name;
-        bytes32 contentHash; // do we really need content hash?
+        bytes32 contentHash; // IPFS or arweave hash here
     }
 
     mapping(uint256 => mapping(address => address))
@@ -103,14 +105,14 @@ contract ProblemNFT is ERC721 {
     modifier checkExpiry(bool state) {
         if (state) {
             require(
-                block.timestamp <= writingStart + EXPIRY,
+                block.timestamp <= writingStart.add(EXPIRY),
                 "writing period has ended"
             );
             _;
         }
         if (state == false) {
             require(
-                block.timestamp >= writingStart + EXPIRY,
+                block.timestamp >= writingStart.add(EXPIRY),
                 "writing period has not ended"
             );
             _;
@@ -121,14 +123,14 @@ contract ProblemNFT is ERC721 {
     staking state functions
     */
 
-    //add deposit to overall reward pie
+    //add WETH deposit to overall reward pie
     function stakeProblem(uint256 _amount)
         external
         payable
         checkState(ProblemState.STAKING)
     {
-        totalReward += _amount;
-        communities[msg.sender] += _amount; //this works if only communities can send
+        totalReward.add(_amount);
+        communities[msg.sender].add(_amount); //this works if only communities can send
         //does payable handle the ETH sent or do I need to recieve it?
     }
 
@@ -175,8 +177,10 @@ contract ProblemNFT is ERC721 {
         );
         //add check that (block.timestamp <= writingStart + EXPIRY)
 
-        contentUserStake[_contentId][msg.sender] += _amount;
-        //should this be transferred to writer or community right away?
+        //check that total user stake is not > 5000,
+        contentUserStake[_contentId][msg.sender].add(_amount);
+        //this should be transferred to writer and community right away
+        //balance between writers and community split depends on where we want the power...
     }
 
     /*
