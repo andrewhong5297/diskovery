@@ -287,8 +287,8 @@
       ]
     },
     "C:\\Users\\Andrew\\Documents\\Blockchain\\diskovery\\contracts\\ProblemNFT.sol": {
-      "lastModificationDate": 1619796746485,
-      "contentHash": "c727418bd202ca085a6ad45c1cc2d65d",
+      "lastModificationDate": 1619830989838,
+      "contentHash": "d32a2f64ab0bb02199ca0d662606df1f",
       "sourceName": "contracts/ProblemNFT.sol",
       "solcConfig": {
         "version": "0.7.0",
@@ -315,7 +315,8 @@
       "imports": [
         "@openzeppelin/contracts/token/ERC20/IERC20.sol",
         "@openzeppelin/contracts/token/ERC721/ERC721.sol",
-        "@openzeppelin/contracts/utils/Counters.sol"
+        "@openzeppelin/contracts/utils/Counters.sol",
+        "./AllRegistry.sol"
       ],
       "versionPragmas": [
         ">=0.6.0"
@@ -857,11 +858,11 @@
       ]
     },
     "C:\\Users\\Andrew\\Documents\\Blockchain\\diskovery\\contracts\\AllRegistry.sol": {
-      "lastModificationDate": 1619797345653,
-      "contentHash": "965cecf78461631283bfe6b77a892bd9",
+      "lastModificationDate": 1619830833570,
+      "contentHash": "b94718ba3c19cdb5f298e887b42556d1",
       "sourceName": "contracts/AllRegistry.sol",
       "solcConfig": {
-        "version": "0.6.12",
+        "version": "0.7.0",
         "settings": {
           "optimizer": {
             "enabled": false,
@@ -882,17 +883,19 @@
           }
         }
       },
-      "imports": [],
+      "imports": [
+        "./PubDAO.sol"
+      ],
       "versionPragmas": [
-        "^0.6.0"
+        ">=0.6.0"
       ],
       "artifacts": [
         "AllRegistry"
       ]
     },
     "C:\\Users\\Andrew\\Documents\\Blockchain\\diskovery\\contracts\\StartProblem.sol": {
-      "lastModificationDate": 1619797122665,
-      "contentHash": "ec120f8e74aadcfab1b113b613fa42d6",
+      "lastModificationDate": 1619830669430,
+      "contentHash": "4707023610da91c6237d23a16853ffdc",
       "sourceName": "contracts/StartProblem.sol",
       "solcConfig": {
         "version": "0.7.0",
@@ -917,13 +920,88 @@
         }
       },
       "imports": [
-        "./ProblemNFT.sol"
+        "./ProblemNFT.sol",
+        "./AllRegistry.sol"
       ],
       "versionPragmas": [
         ">=0.6.0"
       ],
       "artifacts": [
         "StartProblem"
+      ]
+    },
+    "C:\\Users\\Andrew\\Documents\\Blockchain\\diskovery\\contracts\\PubDAO.sol": {
+      "lastModificationDate": 1619830731982,
+      "contentHash": "4e5f316960b1b8501c3b47a6aee88584",
+      "sourceName": "contracts/PubDAO.sol",
+      "solcConfig": {
+        "version": "0.7.0",
+        "settings": {
+          "optimizer": {
+            "enabled": false,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [
+        "@openzeppelin/contracts/access/AccessControl.sol"
+      ],
+      "versionPragmas": [
+        ">=0.6.0"
+      ],
+      "artifacts": [
+        "PubDAO"
+      ]
+    },
+    "C:\\Users\\Andrew\\Documents\\Blockchain\\diskovery\\node_modules\\@openzeppelin\\contracts\\access\\AccessControl.sol": {
+      "lastModificationDate": 1616341243208,
+      "contentHash": "54eb0b53c109558e8312811342e95bf0",
+      "sourceName": "@openzeppelin/contracts/access/AccessControl.sol",
+      "solcConfig": {
+        "version": "0.7.0",
+        "settings": {
+          "optimizer": {
+            "enabled": false,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [
+        "../utils/EnumerableSet.sol",
+        "../utils/Address.sol",
+        "../utils/Context.sol"
+      ],
+      "versionPragmas": [
+        ">=0.6.0 <0.8.0"
+      ],
+      "artifacts": [
+        "AccessControl"
       ]
     }
   }

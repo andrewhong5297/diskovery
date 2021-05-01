@@ -2,11 +2,12 @@
 pragma solidity >=0.6.0;
 
 import "./ProblemNFT.sol";
+import "./AllRegistry.sol";
 
 contract StartProblem {
     //how to store problem queue (should there be a problem queue? does problem need to have a minimum stake before NFT is deployed? Should stake be in disk or USDC?
     address disk;
-    address roles;
+    AllRegistry reg;
 
     mapping(bytes32 => address) public hashToProblem;
     ProblemNFT[] public problems;
@@ -17,8 +18,9 @@ contract StartProblem {
         address creator
     );
 
-    constructor(address _disk) {
+    constructor(address _disk, address _reg) {
         disk = _disk;
+        reg = AllRegistry(_reg);
     }
 
     /*
@@ -30,8 +32,10 @@ contract StartProblem {
             hashToProblem[_hash] == address(0),
             "This problem has been created already"
         );
-        //require pub role here later
+        //require(reg.pubRegistry[msg.sender]==true,"not a publication, can't submit a problem");
+        //burn a problem token, revert if this fails
 
+        //add CREATE2 in here later
         ProblemNFT newProblem = new ProblemNFT(_hash, disk);
         hashToProblem[_hash] = address(newProblem);
         problems.push(newProblem);

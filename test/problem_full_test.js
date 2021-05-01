@@ -41,7 +41,7 @@ describe("ProblemNFT v1", function () {
     const StartProblem = await ethers.getContractFactory(
       "StartProblem"
     )  
-    startProblem = await StartProblem.connect(governance).deploy(disk.address);
+    startProblem = await StartProblem.connect(governance).deploy(disk.address, governance.getAddress()); //replace governance address later
     await startProblem.deployed()
   });
 
@@ -82,6 +82,9 @@ describe("ProblemNFT v1", function () {
 
     const balance = await problemNFT.balanceOf(writer.getAddress())
     console.log("writer NFT: " + balance)
+
+    const content = await problemNFT.getContent() //do we want to return the struct or just an array?
+    console.log(content.toString())
   })
 
   xit("user stakes content", async () => {

@@ -1,8 +1,10 @@
 pragma solidity >=0.6.0;
+pragma experimental ABIEncoderV2;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
+import "./AllRegistry.sol";
 
 /*
 Contract for problems/content and staking/rewards, deployed by registered publisher from startproblem.sol
@@ -20,7 +22,6 @@ contract ProblemNFT is ERC721 {
     uint256 public totalReward;
 
     mapping(address => uint256) public communities; //maps to total commitments
-    address[] users;
     address admin;
 
     //affects what functions are allowed
@@ -116,15 +117,19 @@ contract ProblemNFT is ERC721 {
         }
     }
 
-    //staking state functions
+    /*
+    staking state functions
+    */
+
+    //add deposit to overall reward pie
     function stakeProblem(uint256 _amount)
         external
+        payable
         checkState(ProblemState.STAKING)
     {
-        //should somehow track all communities, users, and writers in another smart contract.
-        //add deposit to overall reward pie
         totalReward += _amount;
-        communities[msg.sender] += _amount;
+        communities[msg.sender] += _amount; //this works if only communities can send
+        //does payable handle the ETH sent or do I need to recieve it?
     }
 
     function endStaking() external checkState(ProblemState.STAKING) {
@@ -133,17 +138,20 @@ contract ProblemNFT is ERC721 {
         writingStart = block.timestamp; //start writing counter
     }
 
-    //writing state functions
+    /*
+    writing state functions
+    */
     function newContent(
         address _writer,
         string calldata _name,
         bytes32 _contentHash
     ) external checkState(ProblemState.WRITING) returns (bool) {
+        //add check that (block.timestamp <= writingStart + EXPIRY)
         require(
             communities[msg.sender] >= 0,
             "Not a staked community, can't publish"
         );
-        //add check that (block.timestamp <= writingStart + EXPIRY)
+        //burn content token
 
         all_content.push(Content(_name, _contentHash));
         _tokenIds.increment();
@@ -171,7 +179,9 @@ contract ProblemNFT is ERC721 {
         //should this be transferred to writer or community right away?
     }
 
-    //reward state functions
+    /*
+    reward state functions
+    */
     function rewardSplit()
         external
         checkState(ProblemState.WRITING)
@@ -185,5 +195,12 @@ contract ProblemNFT is ERC721 {
 
         currentState = ProblemState.REWARDED;
         return true;
+    }
+
+    /* 
+    view functions
+    */
+    function getContent() external view returns (Content[] memory content) {
+        content = all_content;
     }
 }
