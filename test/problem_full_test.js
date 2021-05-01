@@ -49,7 +49,7 @@ describe("ProblemNFT v1", function () {
   it("deploy a new problem", async () => {
     const topic = -1234;
     docHash = "0x"+(new BN(String(topic))).toTwos(256).toString('hex',64);
-    await startProblem.connect(governance).createProblem(docHash)
+    await startProblem.connect(governance).createProblem(docHash,ethers.BigNumber.from("4000"))
     await startProblem.connect(governance).stakeProblem(docHash,ethers.BigNumber.from("1000"))
     await startProblem.connect(publisher).stakeProblem(docHash,ethers.BigNumber.from("3000"))
 
@@ -61,11 +61,6 @@ describe("ProblemNFT v1", function () {
       governance)    
     // console.log(problemNFT)
   })
-
-  // xit("user and publisher token claims", async () => {
-  //   await disk.connect(governance).mint(user.getAddress(), ethers.BigNumber.from((10**20).toLocaleString('fullwide', {useGrouping:false})))
-  //   await disk.connect(governance).mint(publisher.getAddress(), ethers.BigNumber.from((10**20).toLocaleString('fullwide', {useGrouping:false})))
-  // })
 
   it("publish 2 pieces of content", async () => {
     const num = 1559;
@@ -80,17 +75,16 @@ describe("ProblemNFT v1", function () {
     expect(parseInt(balance.toString())).to.equal(1)
 
     const content = await problemNFT.getContent() //do we want to return the struct or just an array?
-    console.log(content)
+    // console.log(content)
   })
 
   it("user stakes content", async () => {
     await problemNFT.connect(user).stakeContent(ethers.BigNumber.from("1000"),ethers.BigNumber.from("1"))
     await problemNFT.connect(user).stakeContent(ethers.BigNumber.from("500"),ethers.BigNumber.from("2"))
-
   })
 
   //move time forward past expiry
-  xit("reward writers/publishers", async () => {
+  it("reward writers/publishers", async () => {
     await problemNFT.connect(publisher).rewardSplit() //normalizes rewards
     await problemNFT.connect(writer1).claimWinnings() 
   })

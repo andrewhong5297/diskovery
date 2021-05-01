@@ -15,15 +15,14 @@ Contract for problems/content and staking/rewards, deployed by registered commun
 
 ------
 to do:
-still need to add token transfers and reward in ERC20 (tbd if set to USDC or native token ETH/Matic/whatever it is). 
-options on maximum user stake and minimum ETH stake.
-debug all_content[0] indexing
+after DAO and Registry, come back and add token transfers and reward in ERC20 (tbd if set to USDC or native token ETH/Matic/whatever it is). 
+options on maximum user stake and expiry
 */
 contract ProblemNFT is ERC721 {
     using SafeMath for uint256;
     using Counters for Counters.Counter;
 
-    IERC20 disk; //need to add approval or permit functions, transferFrom in stake functions
+    IERC20 disk;
     bytes32 problemStatementHash; //used for identifying this problem
     uint256 public totalReward;
     mapping(address => bool) public communities; //maps to total commitments to problems
@@ -68,8 +67,8 @@ contract ProblemNFT is ERC721 {
     ) public ERC721("Problem Set", "PS") {
         problemStatementHash = _problemStatementHash;
         disk = IERC20(disk_implementation);
-        EXPIRY = 50000; //this should be passed in constructor later
-        writingStart = block.timestamp; //start writing counter 2 days late?
+        EXPIRY = 100000; //this should be passed in constructor later with checks
+        writingStart = block.timestamp;
         totalReward = _totalReward;
         for (uint256 i = 0; i < _communities.length; i++) {
             communities[_communities[i]] = true;
@@ -134,6 +133,7 @@ contract ProblemNFT is ERC721 {
         //     all_content[_contentId].community != msg.sender,
         //     "community cannot stake their own article"
         // );
+        require(_contentId > 0, "contentId starts from 1");
         require(
             writerContent[msg.sender] != _contentId,
             "Writer cannot stake their own article"
@@ -146,13 +146,12 @@ contract ProblemNFT is ERC721 {
         ]
             .add(_amount);
 
-        all_content[0].contentReward = all_content[0].contentReward.add(
-            _amount
-        ); //come back to debug this
+        all_content[_contentId.sub(1)].contentReward = all_content[
+            _contentId.sub(1)
+        ]
+            .contentReward
+            .add(_amount); //come back to debug this
         totalUserStaked = totalUserStaked.add(_amount);
-
-        console.log(_contentId);
-        console.log(all_content[0].contentReward);
         //this should be transferred to writer and community right away
         //need an event added here
     }
@@ -168,6 +167,16 @@ contract ProblemNFT is ERC721 {
         for (uint256 i = 0; i < all_content.length; i++) {
             console.log("pre update: ", all_content[i].name);
             console.log("pre update: ", all_content[i].contentReward);
+            console.log(
+                "after divide: ",
+                all_content[i].contentReward.div(totalUserStaked)
+            );
+            console.log(
+                "after multiply: ",
+                all_content[i].contentReward.div(totalUserStaked).mul(
+                    totalReward
+                )
+            );
             all_content[i].contentReward = all_content[i]
                 .contentReward
                 .div(totalUserStaked)

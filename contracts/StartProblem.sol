@@ -10,6 +10,7 @@ contract StartProblem {
     using SafeMath for uint256;
 
     address disk;
+    uint256 MINIMUM_REWARD = 4000;
     // AllRegistry reg;
 
     // ProblemNFT[] public problems; //not sure if this is better to have, or if we just save space without this array and get function.
@@ -25,6 +26,7 @@ contract StartProblem {
     struct Problem {
         bytes32 problemHash;
         uint256 totalReward;
+        uint256 minimumReward;
         bool deployed;
     }
 
@@ -38,14 +40,18 @@ contract StartProblem {
     /*
     pre_deploy functions
     */
-    function createProblem(bytes32 _hash) external {
+    function createProblem(bytes32 _hash, uint256 _minimumReward) external {
         require(
             newProblems[_hash].problemHash == 0,
             "problem has been created already"
         );
+        require(
+            _minimumReward >= MINIMUM_REWARD,
+            "must set a higher minimum reward"
+        );
         //require this to be community
         //burn a problem token
-        newProblems[_hash] = Problem(_hash, 0, false);
+        newProblems[_hash] = Problem(_hash, 0, _minimumReward, false);
         emit NewProblem(_hash, msg.sender);
     }
 
@@ -69,7 +75,9 @@ contract StartProblem {
         emit NewStake(_hash, msg.sender, _amount);
 
         //check if minimum stake was met, if so then deployNewProblem.
-        if (newProblems[_hash].totalReward >= 2000) {
+        if (
+            newProblems[_hash].totalReward >= newProblems[_hash].minimumReward
+        ) {
             deployNewProblem(_hash);
         }
     }
