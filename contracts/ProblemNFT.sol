@@ -1,14 +1,13 @@
 pragma solidity >=0.6.0;
 pragma experimental ABIEncoderV2;
 
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
+import "./interfaces/IERC20S.sol";
+import "./interfaces/IRegistry.sol";
 
 import "hardhat/console.sol";
-
-// import "./AllRegistry.sol"; this should be an interface later
 
 /*
 Contract for problems/content and staking/rewards, deployed by registered community from startproblem.sol
@@ -22,7 +21,8 @@ contract ProblemNFT is ERC721 {
     using SafeMath for uint256;
     using Counters for Counters.Counter;
 
-    IERC20 disk;
+    IRegistry reg; //add into constructor later
+    IERC20S disk;
     bytes32 problemStatementHash; //used for identifying this problem
     uint256 public totalReward;
     mapping(address => bool) public communities; //maps to total commitments to problems
@@ -68,7 +68,7 @@ contract ProblemNFT is ERC721 {
         address[] memory _communities
     ) public ERC721("Problem Set", "PS") {
         problemStatementHash = _problemStatementHash;
-        disk = IERC20(disk_implementation);
+        disk = IERC20S(disk_implementation);
         EXPIRY = 100000; //this should be passed in constructor later with checks
         writingStart = block.timestamp; //should there be a delay before the start?
         totalReward = _totalReward;

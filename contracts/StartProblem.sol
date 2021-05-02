@@ -3,30 +3,28 @@ pragma solidity >=0.6.0;
 
 import "./ProblemNFT.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-
-// import "./AllRegistry.sol"; add interface later
+import "./interfaces/IERC20S.sol";
+import "./interfaces/IRegistry.sol";
 
 //add registry, stake tokens, and burn tokens
 
 contract StartProblem {
     using SafeMath for uint256;
 
+    IERC20S usdc;
     address disk;
     uint256 MINIMUM_REWARD = 4000;
-    // AllRegistry reg;
+    IRegistry reg;
 
     // ProblemNFT[] public problems; //not sure if this is better to have, or if we just save space without this array and get function.
     mapping(bytes32 => address) public deployedProblem;
     mapping(bytes32 => address[]) public problemCommunities;
 
     event NewProblem(bytes32 problemHash, address creator);
-
     event NewStake(bytes32 problemHash, address community, uint256 amount);
-
     event NewProblemDeployed(bytes32 problemHash, address deployedAddress);
 
-    //add more structure to problem statements
+    //add more structure to problem statements? either here or in the DAO
     struct Problem {
         bytes32 problemHash;
         uint256 totalReward;
@@ -36,9 +34,14 @@ contract StartProblem {
 
     mapping(bytes32 => Problem) newProblems;
 
-    constructor(address _disk, address _reg) {
+    constructor(
+        address _disk,
+        address _reg,
+        address _usdc
+    ) {
+        usdc = IERC20S(_usdc);
         disk = _disk;
-        // reg = AllRegistry(_reg);
+        reg = IRegistry(_reg);
     }
 
     /*

@@ -1,6 +1,6 @@
 const { expect } = require("chai");
 const { ethers } = require("hardhat");
-const { abi: abiDisk } = require("../artifacts/contracts/Dai.sol/Dai.json");
+const { abi: abiDisk } = require("../artifacts/contracts/tokens/Disk.sol/Disk.json");
 const { abi: abiProblem } = require("../artifacts/contracts/ProblemNFT.sol/ProblemNFT.json");
 const fs = require("fs"); 
 const BN = require('bn.js');
@@ -11,21 +11,6 @@ describe("ProblemNFT v1", function () {
   let docHash;
   let writer1, writer2, publisher, user, governance;
 
-  xit("setup Skale", async () => {
-    overrides = {
-        gasLimit: ethers.BigNumber.from("10000000"),
-      };
-    
-    // Define Variables
-    const privateKey = '0x2c9aac9e06153f0507f60f8f138adc2af20d4035dff44c597decceff3998466d';
-
-    // Define Provider
-    const provider = new ethers.providers.JsonRpcProvider('http://eth-global-10.skalenodes.com:10323/');
-
-    // Create Wallet
-    main = new ethers.Wallet(privateKey, provider);
-  })
-
   it("setup localhost", async () => {
     [writer1, writer2, publisher, user, governance] = await ethers.getSigners(); //jsonrpc signers from default 20 accounts with 10000 ETH each
     //was there anything else to setup here? lol
@@ -33,16 +18,16 @@ describe("ProblemNFT v1", function () {
 
   it("deploy problem factory and disk", async () => {
     const Disk = await ethers.getContractFactory(
-       "Dai"
+       "Disk"
     );
-    disk = await Disk.connect(governance).deploy(ethers.BigNumber.from(0)); //mints full supply to deployer
+    disk = await Disk.connect(governance).deploy(); //mints full supply to deployer
     await disk.deployed()
 
     const StartProblem = await ethers.getContractFactory(
       "StartProblem"
     )  
 
-    startProblem = await StartProblem.connect(governance).deploy(disk.address, governance.getAddress()); //replace governance address later
+    startProblem = await StartProblem.connect(governance).deploy(disk.address, governance.getAddress(),disk.address); //replace with registry and USDC address later
     await startProblem.deployed()
   });
 
@@ -83,7 +68,7 @@ describe("ProblemNFT v1", function () {
   })
 
   //move time forward past expiry
-  it("reward writers/publishers", async () => {
+  it("normalize rewards and claim writer claim rewards", async () => {
     await problemNFT.connect(publisher).rewardSplit() //normalizes rewards
     await problemNFT.connect(writer1).claimWinnings() 
   })
