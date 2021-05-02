@@ -66,7 +66,6 @@ contract AllRegistry {
     }
 
     function buyTokens(uint256 _tokens, uint256 _tokenType) external {
-        require(pubRegistry[msg.sender] == true, "only pubDAO can claim here");
         uint256 multiplier = 0;
         IERC20S token = IERC20S(address(0));
         if (_tokenType == 0) {
@@ -74,10 +73,18 @@ contract AllRegistry {
             multiplier = REG_TOKEN_MINIMUM;
             token = reg;
         } else if (_tokenType == 1) {
+            require(
+                pubRegistry[msg.sender] == true,
+                "only a registered DAO can claim problem tokens"
+            );
             //problem token
             multiplier = PROB_TOKEN_MINIMUM;
             token = prob;
         } else if (_tokenType == 2) {
+            require(
+                pubRegistry[msg.sender] == true,
+                "only a registered DAO can claim content tokens"
+            );
             //content token
             multiplier = CONT_TOKEN_MINIMUM;
             token = cont;

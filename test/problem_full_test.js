@@ -13,7 +13,6 @@ describe("ProblemNFT v1", function () {
 
   it("setup localhost", async () => {
     [writer1, writer2, publisher, user, governance] = await ethers.getSigners(); //jsonrpc signers from default 20 accounts with 10000 ETH each
-    //was there anything else to setup here? lol
   })
 
   it("deploy problem factory and disk", async () => {
