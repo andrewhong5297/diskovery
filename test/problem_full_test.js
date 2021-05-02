@@ -32,12 +32,12 @@ describe("ProblemNFT v1", function () {
 
   it("deploy a new problem", async () => {
     const topic = -1234;
-    docHash = "0x"+(new BN(String(topic))).toTwos(256).toString('hex',64);
-    await startProblem.connect(governance).createProblem(docHash,ethers.BigNumber.from("4000"))
-    await startProblem.connect(governance).stakeProblem(docHash,ethers.BigNumber.from("1000"))
-    await startProblem.connect(publisher).stakeProblem(docHash,ethers.BigNumber.from("3000"))
+    problemHash = "0x"+(new BN(String(topic))).toTwos(256).toString('hex',64);
 
-    const problemAddress = await startProblem.getProblem(docHash)
+    //add USDC approval
+    await startProblem.connect(governance).createProblem(problemHash,ethers.BigNumber.from("4000"),"What is our motto?")
+
+    const problemAddress = await startProblem.getProblem(problemHash)
     problemNFT = new ethers.Contract(
       problemAddress,
       abiProblem,

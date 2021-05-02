@@ -2,18 +2,12 @@ const { expect } = require("chai");
 const { ethers } = require("hardhat");
 const { abi: abiDisk } = require("../artifacts/contracts/tokens/Disk.sol/Disk.json");
 
-//to include creation of DAO, content approval processes, and maybe user/DAO token claiming
-describe("Onboarding and Registry v1", function () {
+describe("Dao creation, Registry, Problem Submission, and Content Publishing v1", function () {
   let disk, regtoken, probtoken, conttoken, registry;
   let admin, publisher, user;
 
   it("setup localhost", async () => {
     [admin, publisher, user] = await ethers.getSigners(); //jsonrpc signers from default 20 accounts with 10000 ETH each
-  })
-
-  xit("setup dao minimal proxy", async () => {
-    const contract = await ethers.getContractAt("ImplementationContract", addressOfProxy)
-    //init
   })
 
   it("deploy tokens", async () => {
@@ -61,6 +55,17 @@ describe("Onboarding and Registry v1", function () {
     await conttoken.connect(admin).setRegistry(registry.address)    
   })
 
+  xit("setup dao minimal proxy", async () => {
+    const contract = await ethers.getContractAt("ImplementationContract", addressOfProxy)
+    //init
+
+    //assign leader
+    //asign editor
+
+    //leader executes registry and claim below
+  })
+
+
   it("register DAO", async () => {
     await regtoken.connect(publisher).approve(registry.address,ethers.utils.parseUnits("1000",18))
     await registry.connect(publisher).registerPub()
@@ -81,4 +86,14 @@ describe("Onboarding and Registry v1", function () {
     await registry.connect(user).claimWeeklyUser()
     await expect(registry.connect(user).claimWeeklyUser()).to.be.revertedWith("user has already claimed this week");
   })
+
+  //deploy startProblem and setup
+
+  //Editor submits problem, reviewed then executed by Leaders
+
+  //User submits content
+
+  //Editor reviews and publishes to problem
+
+  //follow up with stake and rewards
 })

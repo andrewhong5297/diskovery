@@ -18,18 +18,16 @@ contract StartProblem {
 
     // ProblemNFT[] public problems; //not sure if this is better to have, or if we just save space without this array and get function.
     mapping(bytes32 => address) public deployedProblem;
-    mapping(bytes32 => address[]) public problemCommunities;
 
     event NewProblem(bytes32 problemHash, address creator);
-    event NewStake(bytes32 problemHash, address community, uint256 amount);
     event NewProblemDeployed(bytes32 problemHash, address deployedAddress);
 
     //add more structure to problem statements? either here or in the DAO
     struct Problem {
         bytes32 problemHash;
-        uint256 totalReward;
         uint256 minimumReward;
-        bool deployed;
+        string problemText;
+        address communityProposer;
     }
 
     mapping(bytes32 => Problem) newProblems;
@@ -47,7 +45,11 @@ contract StartProblem {
     /*
     pre_deploy functions
     */
-    function createProblem(bytes32 _hash, uint256 _minimumReward) external {
+    function createProblem(
+        bytes32 _hash,
+        uint256 _minimumReward,
+        string memory _text
+    ) external {
         require(
             newProblems[_hash].problemHash == 0,
             "problem has been created already"
@@ -58,36 +60,11 @@ contract StartProblem {
         );
         //require this to be community
         //recieve/burn a problem token
-        newProblems[_hash] = Problem(_hash, 0, _minimumReward, false);
+
+        //transfer staked tokens (USDC) require transfer to be true
+        newProblems[_hash] = Problem(_hash, _minimumReward, _text, msg.sender);
+        deployNewProblem(_hash);
         emit NewProblem(_hash, msg.sender);
-    }
-
-    //add some priced token as deposit to overall reward
-    //should this even be a function? maybe problem creator has to stake the minimum to kick it off?
-    function stakeProblem(bytes32 _hash, uint256 _amount) external payable {
-        require(
-            newProblems[_hash].problemHash != 0,
-            "problem has not been created yet"
-        );
-        require(
-            deployedProblem[_hash] == address(0),
-            "problem already deployed, go stake on the contract instead"
-        );
-
-        //require msg.sender to be community
-
-        newProblems[_hash].totalReward = newProblems[_hash].totalReward.add(
-            _amount
-        );
-        problemCommunities[_hash].push(msg.sender);
-        emit NewStake(_hash, msg.sender, _amount);
-
-        //check if minimum stake was met, if so then deployNewProblem.
-        if (
-            newProblems[_hash].totalReward >= newProblems[_hash].minimumReward
-        ) {
-            deployNewProblem(_hash);
-        }
     }
 
     /*
@@ -99,8 +76,9 @@ contract StartProblem {
             new ProblemNFT(
                 _hash,
                 disk,
-                newProblems[_hash].totalReward,
-                problemCommunities[_hash]
+                newProblems[_hash].minimumReward,
+                newProblems[_hash].communityProposer,
+                newProblems[_hash].problemText
             );
         deployedProblem[_hash] = address(newProblem);
         // problems.push(newProblem);

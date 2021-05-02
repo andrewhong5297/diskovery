@@ -25,7 +25,8 @@ contract ProblemNFT is ERC721 {
     IERC20S disk;
     bytes32 problemStatementHash; //used for identifying this problem
     uint256 public totalReward;
-    mapping(address => bool) public communities; //maps to total commitments to problems
+    string public problemText;
+    mapping(address => uint256) public communities; //maps to total commitments to problems
 
     //starting options to add in constructor
     uint256 MIN_EXPIRY = 80640; //two weeks
@@ -65,16 +66,16 @@ contract ProblemNFT is ERC721 {
         bytes32 _problemStatementHash,
         address disk_implementation,
         uint256 _totalReward,
-        address[] memory _communities
+        address _community,
+        string memory _problemText
     ) public ERC721("Problem Set", "PS") {
         problemStatementHash = _problemStatementHash;
         disk = IERC20S(disk_implementation);
         EXPIRY = 100000; //this should be passed in constructor later with checks
         writingStart = block.timestamp; //should there be a delay before the start?
         totalReward = _totalReward;
-        for (uint256 i = 0; i < _communities.length; i++) {
-            communities[_communities[i]] = true;
-        }
+        communities[_community] = _totalReward; //can change this to _totalReward instead of boolean
+        problemText = _problemText;
     }
 
     //modifiers
@@ -99,7 +100,7 @@ contract ProblemNFT is ERC721 {
     function addStake(uint256 _amount) external {
         //transferFrom and check balance before calling this
         //check if msg.sender is part of pubdaos mapping
-        communities[msg.sender] = true;
+        communities[msg.sender] = communities[msg.sender].add(_amount);
         totalReward = totalReward.add(_amount); //or msg.value if we make this payable
     }
 
@@ -112,7 +113,10 @@ contract ProblemNFT is ERC721 {
         bytes32 _contentHash
     ) external returns (bool) {
         //add check that (block.timestamp <= writingStart + EXPIRY)
-        require(communities[msg.sender] == true, "Community did not stake");
+        require(
+            communities[msg.sender] >= 0,
+            "Community did not stake, and can't publish"
+        );
         require(
             writerContent[_writer] == 0,
             "Writer has already published once"
