@@ -125,4 +125,6 @@ contract AllRegistry {
         disk.mint(msg.sender, C_USER_TOKEN);
         userClaimTracking[msg.sender] = block.timestamp;
     }
+
+    //need a burn residue function, if I decide to transfer content/problem tokens here. Would be cheap to do on sidechain.
 }
