@@ -15,10 +15,8 @@ Contract for problems/content and staking/rewards, deployed by registered commun
 
 ------
 to do:
-math for fractions/percentage calculations on rewards
-after DAO and Registry, come back and add token transfers and reward in ERC20 (tbd if set to USDC or native token ETH/Matic/whatever it is). 
+after DAO and Registry, come back and add token transfers/burns and reward in ERC20 (just use USDC for now). 
 add constructor options on maximum user stake and expiry
-add registry, and burn content tokens
 */
 contract ProblemNFT is ERC721 {
     using SafeMath for uint256;
@@ -58,6 +56,8 @@ contract ProblemNFT is ERC721 {
     mapping(uint256 => mapping(address => uint256)) public contentUserStake; //track user deposit per content, where first uint is the content id?
 
     Content[] public all_content;
+
+    //staking related
     uint256 totalUserStaked;
     bool rewardsCalculated = false;
 
@@ -70,7 +70,7 @@ contract ProblemNFT is ERC721 {
         problemStatementHash = _problemStatementHash;
         disk = IERC20(disk_implementation);
         EXPIRY = 100000; //this should be passed in constructor later with checks
-        writingStart = block.timestamp;
+        writingStart = block.timestamp; //should there be a delay before the start?
         totalReward = _totalReward;
         for (uint256 i = 0; i < _communities.length; i++) {
             communities[_communities[i]] = true;
@@ -117,7 +117,8 @@ contract ProblemNFT is ERC721 {
             writerContent[_writer] == 0,
             "Writer has already published once"
         );
-        //burn content token
+
+        //recieve/burn content token
         _tokenIds.increment();
         _safeMint(_writer, _tokenIds.current());
 
@@ -131,10 +132,10 @@ contract ProblemNFT is ERC721 {
     }
 
     function stakeContent(uint256 _amount, uint256 _contentId) public {
-        // require(
-        //     all_content[_contentId].community != msg.sender,
-        //     "community cannot stake their own article"
-        // );
+        require(
+            all_content[_contentId.sub(1)].community != msg.sender,
+            "community cannot stake their own article"
+        );
         require(_contentId > 0, "contentId starts from 1");
         require(
             writerContent[msg.sender] != _contentId,
@@ -142,7 +143,7 @@ contract ProblemNFT is ERC721 {
         );
         //add checkExpiry after testing
 
-        //check that total user stake is not > 5000,
+        //add check that total user stake is not > 5000,
         contentUserStake[_contentId][msg.sender] = contentUserStake[_contentId][
             msg.sender
         ]
@@ -154,6 +155,7 @@ contract ProblemNFT is ERC721 {
             .contentReward
             .add(_amount); //come back to debug this
         totalUserStaked = totalUserStaked.add(_amount);
+
         //this should be transferred to writer and community right away
         //need an event added here
     }
@@ -167,20 +169,17 @@ contract ProblemNFT is ERC721 {
         //add checkExpiry after testing
         require(rewardsCalculated == false, "rewards already calculated");
         for (uint256 i = 0; i < all_content.length; i++) {
-            console.log("pre update: ", all_content[i].name);
-            console.log("pre update: ", all_content[i].contentReward);
             all_content[i].contentReward = mulDiv(
                 all_content[i].contentReward,
                 totalReward,
                 totalUserStaked
             );
-            console.log("post update: ", all_content[i].contentReward);
         }
         rewardsCalculated = true;
     }
 
     function claimWinnings() external returns (uint256 transferAmount) {
-        //add expiryCheck
+        //add expiryCheck after testing
         require(
             rewardsCalculated == true,
             "rewards need to be calculated first"
@@ -195,7 +194,7 @@ contract ProblemNFT is ERC721 {
         all_content[contentId.sub(1)].rewardClaimed = true;
 
         console.log("sent to writer: ", transferAmount);
-
+        //need claim event here
         //transfer from contract to msg.sender after checking their winning mapping.
     }
 

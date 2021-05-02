@@ -3,10 +3,11 @@ pragma solidity >=0.6.0;
 
 import "./ProblemNFT.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 // import "./AllRegistry.sol"; add interface later
 
-//add registry, and burn tokens
+//add registry, stake tokens, and burn tokens
 
 contract StartProblem {
     using SafeMath for uint256;
@@ -25,6 +26,7 @@ contract StartProblem {
 
     event NewProblemDeployed(bytes32 problemHash, address deployedAddress);
 
+    //add more structure to problem statements
     struct Problem {
         bytes32 problemHash;
         uint256 totalReward;
@@ -52,12 +54,13 @@ contract StartProblem {
             "must set a higher minimum reward"
         );
         //require this to be community
-        //burn a problem token
+        //recieve/burn a problem token
         newProblems[_hash] = Problem(_hash, 0, _minimumReward, false);
         emit NewProblem(_hash, msg.sender);
     }
 
     //add some priced token as deposit to overall reward
+    //should this even be a function? maybe problem creator has to stake the minimum to kick it off?
     function stakeProblem(bytes32 _hash, uint256 _amount) external payable {
         require(
             newProblems[_hash].problemHash != 0,
@@ -65,7 +68,7 @@ contract StartProblem {
         );
         require(
             deployedProblem[_hash] == address(0),
-            "problem already deployed, go stake on the contract"
+            "problem already deployed, go stake on the contract instead"
         );
 
         //require msg.sender to be community

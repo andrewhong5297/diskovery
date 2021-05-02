@@ -1,11 +1,16 @@
 pragma solidity >=0.6.0;
 
 import "./PubDAO.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 //stores all users and roles, and if they have claimed this week yet or not.
 //this requires a new DAO structure, so we can check if it is a dao or not (i.e. DAO(address))
-
 contract AllRegistry {
+    IERC20 disk;
+    IERC20 reg;
+    IERC20 prob;
+    IERC20 cont;
+
     mapping(address => bool) public pubRegistry;
 
     //checks address then bool then last claim time, if now() - last claim time > 40000 then they can claim tokens again.
@@ -31,6 +36,23 @@ contract AllRegistry {
     }
 
     //pubclaim for registration tokens, problem tokens, and content tokens.
+    function buyRegistryTokens(uint256 _tokens) external {
+        //require transfer of disk tokens
+        //IERC20.mint(msg.sender,_tokens);
+    }
+
+    function buyProblemTokens() external {}
+
+    function buyContentTokens() external {}
+
+    function claimMonthlyPub() external {
+        //require monthly
+        //IERC20.mint(msg.sender,2); //problems
+        //IERC20.mint(msg.sender,20); //contents
+    }
 
     //userclaim tokens to stake
+    function checkPubDAO(address _checker) external view returns (bool isDao) {
+        isDao = true;
+    }
 }
