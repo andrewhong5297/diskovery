@@ -4,5 +4,4 @@ With Diskover, communities can stake on problems, then creators can publish cont
 
 This is a completely different way of managing and discovering content than the publication style business models of today. Publications will always grow out of their niche, communities will always be focused on their specific problems/products.
 
-![alt text](https://github.com/andrewhong5297/diskovery/blob/master/Idea%20board.jpg)
-
+![alt text](https://github.com/andrewhong5297/diskovery/blob/master/arch_v1.jpg)
