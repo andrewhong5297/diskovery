@@ -17,7 +17,7 @@ describe("Diskover Full Test v1", function () {
     [writer1, writer2, reader, admin, adminDao, leader1, leader2, editor1] = await ethers.getSigners(); //jsonrpc signers from default 20 accounts with 10000 ETH each
   })
 
-  it("deploy tokens", async () => {
+  it("deploy all tokens", async () => {
     const Disk = await ethers.getContractFactory(
       "Disk"
     );
@@ -43,7 +43,7 @@ describe("Diskover Full Test v1", function () {
     await conttoken.deployed()
     })
 
-  it("deploy registry", async () => {
+  it("deploy registry contract", async () => {
     const Registry = await ethers.getContractFactory(
       "AllRegistry"
     );
@@ -72,7 +72,7 @@ describe("Diskover Full Test v1", function () {
   });
 
   //dao creation, roles setup, funding,
-  it("deploy DAO", async () => {
+  it("deploy DAO contract", async () => {
     const DAO = await ethers.getContractFactory(
       "PubDAO"
     );
@@ -85,7 +85,7 @@ describe("Diskover Full Test v1", function () {
     await dao.connect(adminDao).manageLeader(leader2.getAddress(),true)
   })
 
-  it("test DAO buy reg token", async () => {
+  it("test DAO buy reg token from Registry", async () => {
     //normally this would have to be earned
     await disk.connect(admin).transfer(dao.address,ethers.utils.parseUnits("500000",18)) 
     await dao.connect(adminDao).buyTokens(ethers.utils.parseUnits("1",18),ethers.BigNumber.from("0"))
@@ -98,12 +98,12 @@ describe("Diskover Full Test v1", function () {
     // console.log("publisher state: ", isPub)
   })
 
-  it("claim weekly DAO and purchase tokens", async () => {
+  it("claim weekly DAO tokens, and purchase more tokens", async () => {
     await dao.connect(leader1).claimTokens()
     await expect(dao.connect(leader1).claimTokens()).to.be.revertedWith("pub has already claimed this week");
   })
   
-  it("claim weekly reader/writer", async () => { 
+  it("claim weekly reader/writer tokens", async () => { 
     await registry.connect(reader).claimWeeklyUser()
     await registry.connect(writer1).claimWeeklyUser()
     await registry.connect(writer2).claimWeeklyUser()
@@ -111,7 +111,7 @@ describe("Diskover Full Test v1", function () {
     await expect(registry.connect(reader).claimWeeklyUser()).to.be.revertedWith("user has already claimed this week");
   })
 
-  it("dao creates, votes, and deploys a new problem", async () => {    
+  it("DAO creates, votes, and deploys a new problem", async () => {    
     const topic = -1234;
     problemHash = "0x"+(new BN(String(topic))).toTwos(256).toString('hex',64);
     expiry = "50000"; //about a week or so
@@ -134,7 +134,7 @@ describe("Diskover Full Test v1", function () {
     expect(problemBalance).to.equal(reward)
   })
 
-  it("writers submits content", async () => {
+  it("writers submit content to DAO", async () => {
     const num = 1559;
     contentHash = "0x"+(new BN(String(num))).toTwos(256).toString('hex',64);
     const _stake = ethers.utils.parseUnits("500",18);
@@ -149,7 +149,7 @@ describe("Diskover Full Test v1", function () {
     await dao.connect(writer2).submitContent(contentHash2,"Out of the Ether",problemNFT.address,_stake2,problemNFT.getExpiry()) 
   })
 
-  it("publish 2 pieces of content", async () => {
+  it("DAO publishes the 2 pieces of content", async () => {
     await dao.connect(editor1).publishContent(contentHash);
     await dao.connect(editor1).publishContent(contentHash2);
 
