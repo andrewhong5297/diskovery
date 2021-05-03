@@ -84,7 +84,7 @@ contract StartProblem {
                 address(usdc),
                 _minimumReward,
                 msg.sender,
-                _text,
+                // _text,
                 address(reg),
                 cont,
                 MAX_STAKE,

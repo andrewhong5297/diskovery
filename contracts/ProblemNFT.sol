@@ -19,7 +19,7 @@ contract ProblemNFT is ERC721 {
     IERC20S cont;
     bytes32 problemStatementHash; //used for identifying this problem
     uint256 public totalReward;
-    string public problemText;
+    // string public problemText;
     mapping(address => uint256) public communities; //maps to total commitments to problems
 
     //starting options to add in constructor
@@ -50,7 +50,7 @@ contract ProblemNFT is ERC721 {
         address communitySponsor
     );
 
-    event NewStake(address communitySponsor, uint256 amount);
+    event NewStake(address communitySponsor, uint256 amount, bool isDao);
 
     event NewContentStake(address user, uint256 amount, uint256 tokenId);
 
@@ -62,7 +62,7 @@ contract ProblemNFT is ERC721 {
         address _usdc,
         uint256 _totalReward,
         address _community,
-        string memory _problemText,
+        // string memory _problemText,
         address _reg,
         address _cont,
         uint256 _maxS,
@@ -75,7 +75,7 @@ contract ProblemNFT is ERC721 {
         EXPIRY = block.timestamp + _expiry;
         totalReward = _totalReward;
         communities[_community] = _totalReward; //can change this to _totalReward instead of boolean
-        problemText = _problemText;
+        // problemText = _problemText;
         reg = IRegistry(_reg);
         MAX_STAKE = _maxS;
     }
@@ -83,12 +83,16 @@ contract ProblemNFT is ERC721 {
     //function that allows anyone to add to totalReward anytime before expiry
     function addStake(uint256 _amount) external {
         require(block.timestamp <= EXPIRY, "ended");
-        require(reg.checkPubDAO(msg.sender) == true);
+
+        bool isDao = false;
+        if (reg.checkPubDAO(msg.sender) == true) {
+            communities[msg.sender] = communities[msg.sender].add(_amount);
+            isDao = true;
+        }
         usdc.transferFrom(msg.sender, address(this), _amount);
-        communities[msg.sender] = communities[msg.sender].add(_amount);
         totalReward = totalReward.add(_amount); //or msg.value if we make this payable
 
-        emit NewStake(msg.sender, _amount);
+        emit NewStake(msg.sender, _amount, isDao);
     }
 
     /*
