@@ -1,48 +1,48 @@
 pragma solidity >=0.6.0;
 pragma experimental ABIEncoderV2;
 
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
-import "@openzeppelin/contracts/utils/Counters.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
-
-import "hardhat/console.sol";
-
-// import "./AllRegistry.sol"; this should be an interface later
+import "./interfaces/IERC20S.sol";
+import "./interfaces/IRegistry.sol";
 
 /*
-Contract for problems/content and staking/rewards, deployed by registered publisher from startproblem.sol
-
-------
-to do:
-still need to add token transfers and reward in ERC20 (tbd if set to USDC or native token ETH/Matic/whatever it is). 
-options on maximum user stake and minimum ETH stake.
-debug all_content[0] indexing
+Contract for problems/content and staking/rewards, deployed by registered community from startproblem.sol
 */
 contract ProblemNFT is ERC721 {
     using SafeMath for uint256;
-    using Counters for Counters.Counter;
+    uint256 _tokenId = 0;
 
-    IERC20 disk; //need to add approval or permit functions, transferFrom in stake functions
+    IRegistry reg; //add into constructor later
+    IERC20S disk;
+    IERC20S usdc;
+    IERC20S cont;
     bytes32 problemStatementHash; //used for identifying this problem
     uint256 public totalReward;
-
+    // string public problemText;
     mapping(address => uint256) public communities; //maps to total commitments to problems
 
-    //affects what functions are allowed
-    enum ProblemState {STAKING, WRITING, REWARDED}
-    ProblemState currentState;
-
     //starting options to add in constructor
-    uint256 MIN_EXPIRY = 80640; //two weeks
-    uint256 MAX_EXPIRY = 80640 * 2; //a month
-
+    uint256 MAX_STAKE;
     uint256 EXPIRY;
-    uint256 writingStart;
 
-    Counters.Counter private _tokenIds;
+    struct Content {
+        string name;
+        address writer;
+        address community;
+        bytes32 contentHash; // IPFS or arweave hash here
+        uint256 contentReward;
+        bool rewardClaimed;
+    }
 
-    //content related events/variables
+    mapping(uint256 => Content) allContent;
+    mapping(uint256 => mapping(address => uint256)) public contentUserStake; //track user deposit per content, where first uint is the content id?
+    address[] writers;
+
+    //staking related
+    uint256 totalUserStaked;
+    bool rewardsCalculated = false;
+
     event NewContent(
         uint256 contentId,
         string articleName,
@@ -50,98 +50,49 @@ contract ProblemNFT is ERC721 {
         address communitySponsor
     );
 
-    struct Content {
-        string name;
-        address writer;
-        bytes32 contentHash; // IPFS or arweave hash here
-        uint256 contentReward;
-        bool rewardClaimed;
-    }
+    event NewStake(address communitySponsor, uint256 amount, bool isDao);
 
-    mapping(address => address) public writerPublisher;
-    mapping(address => uint256) public writerContent;
-    mapping(uint256 => mapping(address => uint256)) public contentUserStake; //track user deposit per content, where first uint is the content id?
+    event NewContentStake(address user, uint256 amount, uint256 tokenId);
 
-    Content[] public all_content;
-    uint256 totalUserStaked; //tracks total stake per content
+    event RewardClaimed(address writer, uint256 amount);
 
-    constructor(bytes32 _problemStatementHash, address disk_implementation)
-        public
-        ERC721("Problem Set", "PS")
-    {
-        currentState = ProblemState.STAKING;
+    constructor(
+        bytes32 _problemStatementHash,
+        address _disk,
+        address _usdc,
+        uint256 _totalReward,
+        address _community,
+        // string memory _problemText,
+        address _reg,
+        address _cont,
+        uint256 _maxS,
+        uint256 _expiry
+    ) public ERC721("Problem Set", "PS") {
         problemStatementHash = _problemStatementHash;
-        disk = IERC20(disk_implementation);
-        EXPIRY = 50000; //this should be passed in constructor later
+        disk = IERC20S(_disk);
+        usdc = IERC20S(_usdc);
+        cont = IERC20S(_cont);
+        EXPIRY = block.timestamp + _expiry;
+        totalReward = _totalReward;
+        communities[_community] = _totalReward; //can change this to _totalReward instead of boolean
+        // problemText = _problemText;
+        reg = IRegistry(_reg);
+        MAX_STAKE = _maxS;
     }
 
-    //modifiers
-    modifier checkState(ProblemState state) {
-        if (state == ProblemState.STAKING) {
-            require(
-                currentState == ProblemState.STAKING,
-                "Staking period has already ended"
-            );
-            _;
+    //function that allows anyone to add to totalReward anytime before expiry
+    function addStake(uint256 _amount) external {
+        require(block.timestamp <= EXPIRY, "ended");
+
+        bool isDao = false;
+        if (reg.checkPubDAO(msg.sender) == true) {
+            communities[msg.sender] = communities[msg.sender].add(_amount);
+            isDao = true;
         }
+        usdc.transferFrom(msg.sender, address(this), _amount);
+        totalReward = totalReward.add(_amount); //or msg.value if we make this payable
 
-        if (state == ProblemState.WRITING) {
-            if (currentState == ProblemState.STAKING) {
-                revert("Writing period has not started");
-            } else if (currentState == ProblemState.REWARDED) {
-                revert(
-                    "Writing period has already ended and rewards distributed"
-                );
-            } else {
-                _;
-            }
-        }
-
-        if (state == ProblemState.REWARDED) {
-            require(
-                currentState == ProblemState.REWARDED,
-                "Writing period has not yet ended"
-            );
-            _;
-        }
-    }
-
-    modifier checkExpiry(bool state) {
-        if (state) {
-            require(
-                block.timestamp <= writingStart.add(EXPIRY),
-                "writing period has ended"
-            );
-            _;
-        }
-        if (state == false) {
-            require(
-                block.timestamp >= writingStart.add(EXPIRY),
-                "writing period has not ended"
-            );
-            _;
-        }
-    }
-
-    /*
-    staking state functions
-    */
-
-    //add some priced token as deposit to overall reward
-    function stakeProblem(uint256 _amount)
-        external
-        payable
-        checkState(ProblemState.STAKING)
-    {
-        totalReward = totalReward.add(_amount);
-        communities[msg.sender] = communities[msg.sender].add(_amount); //this works if only communities can send
-        //does payable handle the ETH sent or do I need to recieve it?
-    }
-
-    function endStaking() external checkState(ProblemState.STAKING) {
-        // require(totalReward >= 10**20, "not enough rewards yet for writers");
-        currentState = ProblemState.WRITING;
-        writingStart = block.timestamp; //start writing counter
+        emit NewStake(msg.sender, _amount, isDao);
     }
 
     /*
@@ -151,98 +102,147 @@ contract ProblemNFT is ERC721 {
         address _writer,
         string calldata _name,
         bytes32 _contentHash
-    ) external checkState(ProblemState.WRITING) returns (bool) {
-        //add check that (block.timestamp <= writingStart + EXPIRY)
-        require(
-            communities[msg.sender] >= 0,
-            "Not a staked community, can't publish"
+    ) external returns (bool) {
+        require(block.timestamp <= EXPIRY, "ended");
+        require(communities[msg.sender] >= 0);
+        for (uint256 i = 1; i <= writers.length; i++) {
+            if (allContent[i].writer == _writer) {
+                revert();
+            }
+        }
+
+        cont.transferFrom(msg.sender, address(this), 10**18);
+        _tokenId = _tokenId.add(1);
+        _safeMint(_writer, _tokenId);
+
+        allContent[_tokenId] = Content(
+            _name,
+            _writer,
+            msg.sender,
+            _contentHash,
+            0,
+            false
         );
-        require(
-            writerPublisher[_writer] == address(0),
-            "Has already published once"
-        );
-        //burn content token
-        _safeMint(_writer, _tokenIds.current());
+        writers.push(_writer);
 
-        writerPublisher[_writer] = msg.sender;
-        all_content.push(Content(_name, _writer, _contentHash, 0, false));
-        writerContent[_writer] = _tokenIds.current();
-
-        emit NewContent(_tokenIds.current(), _name, _writer, msg.sender);
-        _tokenIds.increment();
-
+        emit NewContent(_tokenId, _name, _writer, msg.sender);
         return true;
     }
 
-    function stakeContent(uint256 _amount, uint256 _contentId) public {
+    function stakeContent(uint256 _amount, uint256 _contentId) external {
+        require(block.timestamp <= EXPIRY, "ended");
         require(
-            communities[msg.sender] == 0,
-            "Sender is a staked community, can't stake article"
+            allContent[_contentId].community != msg.sender &&
+                allContent[_contentId].writer != msg.sender
         );
-        require(
-            writerContent[msg.sender] != _contentId,
-            "Writer cannot stake their own article"
-        );
-        //add checkExpiry after testing
+        require(_contentId > 0);
 
-        //check that total user stake is not > 5000,
+        disk.transferFrom(msg.sender, address(this), _amount);
+
+        require(
+            contentUserStake[_contentId][msg.sender].add(_amount) <= MAX_STAKE
+        );
         contentUserStake[_contentId][msg.sender] = contentUserStake[_contentId][
             msg.sender
         ]
             .add(_amount);
 
-        console.log(all_content[_contentId].contentReward);
-        // all_content[0].contentReward = all_content[0].contentReward.add(
-        //     _amount
-        // ); //come back to debug this
+        allContent[_contentId].contentReward = allContent[_contentId]
+            .contentReward
+            .add(_amount); //come back to debug this
         totalUserStaked = totalUserStaked.add(_amount);
 
-        //this should be transferred to writer and community right away
-        //need an event added here
+        //transfer to writer and community
+        uint256 writerAmount = mulDiv(_amount, 7, 10);
+        disk.transfer(allContent[_contentId].writer, writerAmount);
+        disk.transfer(
+            allContent[_contentId].community,
+            _amount.sub(writerAmount)
+        );
+
+        emit NewContentStake(msg.sender, _amount, _contentId);
     }
 
     /*
     reward state functions
     */
-    // function rewardSplit()
-    //     external
-    //     checkState(ProblemState.WRITING)
-    //     returns (bool)
-    // {
-    //     //add checkExpiry after testing
-    //     for (uint256 i = 0; i < all_content.length; i++) {
-    //         all_content[i].contentReward.div(totalUserStaked).mul(totalReward);
-    //     }
 
-    //     currentState = ProblemState.REWARDED;
-    //     return true;
-    // }
+    ///@notice normalizes content stakes, then allocates totalReward.
+    function rewardSplit() external {
+        require(block.timestamp >= EXPIRY, "not ended");
+        require(rewardsCalculated == false, "calc");
+        for (uint256 i = 1; i <= writers.length; i++) {
+            allContent[i].contentReward = mulDiv(
+                allContent[i].contentReward,
+                totalReward,
+                totalUserStaked
+            );
+        }
+        rewardsCalculated = true;
+    }
 
-    // function claimWinnings()
-    //     external
-    //     checkState(ProblemState.REWARDED)
-    //     returns (uint256 transferAmount)
-    // {
-    //     uint256 contentId = writerContent[msg.sender];
-    //     require(
-    //         all_content[contentId].rewardClaimed == false,
-    //         "reward already claimed"
-    //     );
+    function claimWinnings() external returns (uint256) {
+        require(rewardsCalculated == true, "need calc");
 
-    //     transferAmount = all_content[contentId].contentReward;
-    //     all_content[contentId].rewardClaimed = true;
+        for (uint256 i = 1; i <= writers.length; i++) {
+            if (allContent[i].writer == msg.sender) {
+                require(allContent[i].rewardClaimed == false, "reward claimed");
 
-    //     //transfer from contract to msg.sender after checking their winning mapping.
-    // }
+                uint256 transferAmount = allContent[i].contentReward;
+                usdc.transfer(msg.sender, transferAmount);
+                allContent[i].rewardClaimed = true;
+
+                emit RewardClaimed(msg.sender, transferAmount);
+                return transferAmount;
+            }
+        }
+    }
 
     /* 
     view functions
     */
-    function getContent() external view returns (Content[] memory content) {
-        content = all_content;
+    function getContent(uint256 _id) external view returns (Content memory) {
+        return allContent[_id];
     }
 
-    //     function getContentCount() external view returns (uint256 count) {
-    //         count = all_content.length;
-    //     }
+    function getContentCount() external view returns (uint256) {
+        return writers.length;
+    }
+
+    function fullMul(uint256 x, uint256 y)
+        public
+        pure
+        returns (uint256 l, uint256 h)
+    {
+        uint256 mm = mulmod(x, y, uint256(-1));
+        l = x * y;
+        h = mm - l;
+        if (mm < l) h -= 1;
+    }
+
+    function mulDiv(
+        uint256 x,
+        uint256 y,
+        uint256 z
+    ) public pure returns (uint256) {
+        (uint256 l, uint256 h) = fullMul(x, y);
+        require(h < z);
+        uint256 mm = mulmod(x, y, z);
+        if (mm > l) h -= 1;
+        l -= mm;
+        uint256 pow2 = z & -z;
+        z /= pow2;
+        l /= pow2;
+        l += h * ((-pow2) / pow2 + 1);
+        uint256 r = 1;
+        r *= 2 - z * r;
+        r *= 2 - z * r;
+        r *= 2 - z * r;
+        r *= 2 - z * r;
+        r *= 2 - z * r;
+        r *= 2 - z * r;
+        r *= 2 - z * r;
+        r *= 2 - z * r;
+        return l * r;
+    }
 }

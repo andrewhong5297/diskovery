@@ -14,7 +14,7 @@
     "balance": "hardhat balance",
     "send": "hardhat send"
   },
-  "author": "Pet Project Team! :)",
+  "author": "Andrew Hong",
   "license": "ISC",
   "dependencies": {
     "@chainlink/contracts": "^0.1.6",
@@ -32,5 +32,8 @@
     "mocha": "^8.2.1",
     "node-fetch": "^2.6.1",
     "web3": "^1.3.0"
+  },
+  "devDependencies": {
+    "hardhat-contract-sizer": "^2.0.3"
   }
 }
