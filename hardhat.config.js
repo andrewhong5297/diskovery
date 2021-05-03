@@ -1,6 +1,7 @@
 require("@nomiclabs/hardhat-waffle");
 require("@nomiclabs/hardhat-etherscan");
 require('hardhat-contract-sizer');
+require("hardhat-gas-reporter");
 
 const fs = require("fs");
 
@@ -94,7 +95,12 @@ module.exports = {
     alphaSort: true,
     runOnCompile: true,
     disambiguatePaths: false,
-  }
+  },
+    gasReporter: {
+      currency: 'USD',
+      gasPrice: 20,
+      enabled: true
+    }
 };
 
 
