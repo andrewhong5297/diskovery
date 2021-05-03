@@ -8,7 +8,7 @@ const BN = require('bn.js');
 describe("ProblemNFT v1", function () {
   let problemNFT, startProblem, usdc;
   let disk, regtoken, probtoken, conttoken, registry;
-  let problemHash;
+  let problemHash, expiry;
   let writer1, writer2, publisher, user, admin;
 
   it("setup localhost", async () => {
@@ -101,10 +101,11 @@ describe("ProblemNFT v1", function () {
 
     const topic = -1234;
     problemHash = "0x"+(new BN(String(topic))).toTwos(256).toString('hex',64);
+    expiry = "50000"; //about a week or so
 
     await probtoken.connect(publisher).approve(startProblem.address, ethers.utils.parseUnits("100",18))
     await usdc.connect(publisher).approve(startProblem.address, ethers.utils.parseUnits("400000",18))
-    await startProblem.connect(publisher).createProblem(problemHash,ethers.utils.parseUnits("4000",18),ethers.BigNumber.from("50000"),"What is our motto?")
+    await startProblem.connect(publisher).createProblem(problemHash,ethers.utils.parseUnits("4000",18),ethers.BigNumber.from(expiry),"What is our motto?")
 
     const problemAddress = await startProblem.getProblem(problemHash)
     problemNFT = new ethers.Contract(
@@ -131,7 +132,8 @@ describe("ProblemNFT v1", function () {
     const balance = await problemNFT.balanceOf(writer1.getAddress())
     expect(parseInt(balance.toString())).to.equal(1)
 
-    const content = await problemNFT.getContent() 
+    const content_count = await problemNFT.getContentCount();
+    const content = await problemNFT.getContent(ethers.BigNumber.from(content_count)) 
     // console.log(content)
   })
 
@@ -141,8 +143,11 @@ describe("ProblemNFT v1", function () {
     await problemNFT.connect(user).stakeContent(ethers.BigNumber.from("500"),ethers.BigNumber.from("2"))
   })
 
-  //move time forward past expiry
   it("normalize rewards and claim writer claim rewards", async () => {
+    //move time forward past expiry
+    await network.provider.send("evm_setNextBlockTimestamp", [Date.now()+parseInt(expiry)+100])
+    await network.provider.send("evm_mine")
+
     await problemNFT.connect(publisher).rewardSplit() //normalizes rewards
     await problemNFT.connect(writer1).claimWinnings() 
 

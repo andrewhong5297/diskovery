@@ -35,10 +35,9 @@ contract ProblemNFT is ERC721 {
         bool rewardClaimed;
     }
 
-    mapping(address => uint256) public writerContent;
+    mapping(uint256 => Content) allContent;
     mapping(uint256 => mapping(address => uint256)) public contentUserStake; //track user deposit per content, where first uint is the content id?
-
-    Content[] public all_content;
+    address[] writers;
 
     //staking related
     uint256 totalUserStaked;
@@ -81,20 +80,9 @@ contract ProblemNFT is ERC721 {
         MAX_STAKE = _maxS;
     }
 
-    //modifiers
-    modifier checkExpiry(bool state) {
-        if (state) {
-            require(block.timestamp <= EXPIRY, "writing period has ended");
-            _;
-        }
-        if (state == false) {
-            require(block.timestamp >= EXPIRY, "writing period has not ended");
-            _;
-        }
-    }
-
     //function that allows anyone to add to totalReward anytime before expiry
     function addStake(uint256 _amount) external {
+        require(block.timestamp <= EXPIRY, "ended");
         require(reg.checkPubDAO(msg.sender) == true);
         usdc.transferFrom(msg.sender, address(this), _amount);
         communities[msg.sender] = communities[msg.sender].add(_amount);
@@ -111,28 +99,39 @@ contract ProblemNFT is ERC721 {
         string calldata _name,
         bytes32 _contentHash
     ) external returns (bool) {
-        //add checkExpiry(true)
+        require(block.timestamp <= EXPIRY, "ended");
         require(communities[msg.sender] >= 0);
-        require(writerContent[_writer] == 0);
+        for (uint256 i = 1; i <= writers.length; i++) {
+            if (allContent[i].writer == _writer) {
+                revert();
+            }
+        }
 
         cont.transferFrom(msg.sender, address(this), 10**18);
         _tokenId = _tokenId.add(1);
         _safeMint(_writer, _tokenId);
 
-        all_content.push(
-            Content(_name, _writer, msg.sender, _contentHash, 0, false)
+        allContent[_tokenId] = Content(
+            _name,
+            _writer,
+            msg.sender,
+            _contentHash,
+            0,
+            false
         );
-        writerContent[_writer] = _tokenId;
+        writers.push(_writer);
 
         emit NewContent(_tokenId, _name, _writer, msg.sender);
         return true;
     }
 
-    function stakeContent(uint256 _amount, uint256 _contentId) public {
-        require(all_content[_contentId.sub(1)].community != msg.sender);
+    function stakeContent(uint256 _amount, uint256 _contentId) external {
+        require(block.timestamp <= EXPIRY, "ended");
+        require(
+            allContent[_contentId].community != msg.sender &&
+                allContent[_contentId].writer != msg.sender
+        );
         require(_contentId > 0);
-        require(writerContent[msg.sender] != _contentId);
-        //add checkExpiry(true)
 
         disk.transferFrom(msg.sender, address(this), _amount);
 
@@ -144,18 +143,16 @@ contract ProblemNFT is ERC721 {
         ]
             .add(_amount);
 
-        all_content[_contentId.sub(1)].contentReward = all_content[
-            _contentId.sub(1)
-        ]
+        allContent[_contentId].contentReward = allContent[_contentId]
             .contentReward
             .add(_amount); //come back to debug this
         totalUserStaked = totalUserStaked.add(_amount);
 
         //transfer to writer and community
         uint256 writerAmount = mulDiv(_amount, 7, 10);
-        disk.transfer(all_content[_contentId.sub(1)].writer, writerAmount);
+        disk.transfer(allContent[_contentId].writer, writerAmount);
         disk.transfer(
-            all_content[_contentId.sub(1)].community,
+            allContent[_contentId].community,
             _amount.sub(writerAmount)
         );
 
@@ -168,11 +165,11 @@ contract ProblemNFT is ERC721 {
 
     ///@notice normalizes content stakes, then allocates totalReward.
     function rewardSplit() external {
-        //add checkExpiry(false)
+        require(block.timestamp >= EXPIRY, "not ended");
         require(rewardsCalculated == false, "calc");
-        for (uint256 i = 0; i < all_content.length; i++) {
-            all_content[i].contentReward = mulDiv(
-                all_content[i].contentReward,
+        for (uint256 i = 1; i <= writers.length; i++) {
+            allContent[i].contentReward = mulDiv(
+                allContent[i].contentReward,
                 totalReward,
                 totalUserStaked
             );
@@ -180,30 +177,32 @@ contract ProblemNFT is ERC721 {
         rewardsCalculated = true;
     }
 
-    function claimWinnings() external returns (uint256 transferAmount) {
+    function claimWinnings() external returns (uint256) {
         require(rewardsCalculated == true, "need calc");
-        uint256 contentId = writerContent[msg.sender];
-        require(
-            all_content[contentId].rewardClaimed == false,
-            "reward claimed"
-        );
 
-        transferAmount = all_content[contentId.sub(1)].contentReward;
-        usdc.transfer(msg.sender, transferAmount);
-        all_content[contentId.sub(1)].rewardClaimed = true;
+        for (uint256 i = 1; i <= writers.length; i++) {
+            if (allContent[i].writer == msg.sender) {
+                require(allContent[i].rewardClaimed == false, "reward claimed");
 
-        emit RewardClaimed(msg.sender, transferAmount);
+                uint256 transferAmount = allContent[i].contentReward;
+                usdc.transfer(msg.sender, transferAmount);
+                allContent[i].rewardClaimed = true;
+
+                emit RewardClaimed(msg.sender, transferAmount);
+                return transferAmount;
+            }
+        }
     }
 
     /* 
     view functions
     */
-    function getContent() external view returns (Content[] memory content) {
-        content = all_content;
+    function getContent(uint256 _id) external view returns (Content memory) {
+        return allContent[_id];
     }
 
-    function getContentCount() external view returns (uint256 count) {
-        count = all_content.length;
+    function getContentCount() external view returns (uint256) {
+        return writers.length;
     }
 
     function fullMul(uint256 x, uint256 y)

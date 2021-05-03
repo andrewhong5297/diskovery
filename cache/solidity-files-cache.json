@@ -935,8 +935,8 @@
       ]
     },
     "C:\\Users\\Andrew\\Documents\\Blockchain\\diskovery\\contracts\\ProblemNFT.sol": {
-      "lastModificationDate": 1620013229835,
-      "contentHash": "c1cd2c280373d2384f2cacd4a9befa3e",
+      "lastModificationDate": 1620014936588,
+      "contentHash": "a23a9a4755a37176fd992411b566b721",
       "sourceName": "contracts/ProblemNFT.sol",
       "solcConfig": {
         "version": "0.7.0",
