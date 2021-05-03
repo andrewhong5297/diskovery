@@ -2,8 +2,8 @@
   "_format": "hh-sol-cache-2",
   "files": {
     "C:\\Users\\Andrew\\Documents\\Blockchain\\diskovery\\contracts\\AllRegistry.sol": {
-      "lastModificationDate": 1619994025431,
-      "contentHash": "8be66d14477f0bd82b5f4aa422d040f4",
+      "lastModificationDate": 1619995655216,
+      "contentHash": "7c765f9626f561dbc86c6854d442795f",
       "sourceName": "contracts/AllRegistry.sol",
       "solcConfig": {
         "version": "0.7.0",
@@ -80,7 +80,7 @@
       ]
     },
     "C:\\Users\\Andrew\\Documents\\Blockchain\\diskovery\\contracts\\interfaces\\IERC20S.sol": {
-      "lastModificationDate": 1619987169296,
+      "lastModificationDate": 1619994043924,
       "contentHash": "d8fd02249fe3e84a8b2f666caf2703be",
       "sourceName": "contracts/interfaces/IERC20S.sol",
       "solcConfig": {
@@ -183,6 +183,108 @@
       ],
       "artifacts": [
         "AccessControl"
+      ]
+    },
+    "C:\\Users\\Andrew\\Documents\\Blockchain\\diskovery\\contracts\\interfaces\\IRegistry.sol": {
+      "lastModificationDate": 1619994531327,
+      "contentHash": "68b0587795f0b8723f280fd14e61f83e",
+      "sourceName": "contracts/interfaces/IRegistry.sol",
+      "solcConfig": {
+        "version": "0.7.0",
+        "settings": {
+          "optimizer": {
+            "enabled": false,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        ">=0.6.0"
+      ],
+      "artifacts": [
+        "IRegistry"
+      ]
+    },
+    "C:\\Users\\Andrew\\Documents\\Blockchain\\diskovery\\contracts\\interfaces\\IProblemNFT.sol": {
+      "lastModificationDate": 1619994087726,
+      "contentHash": "8c61378ee249e7b6ab29052a70797d58",
+      "sourceName": "contracts/interfaces/IProblemNFT.sol",
+      "solcConfig": {
+        "version": "0.7.0",
+        "settings": {
+          "optimizer": {
+            "enabled": false,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        ">=0.6.0"
+      ],
+      "artifacts": [
+        "IProblemNFT"
+      ]
+    },
+    "C:\\Users\\Andrew\\Documents\\Blockchain\\diskovery\\contracts\\interfaces\\IStartProblem.sol": {
+      "lastModificationDate": 1619995129425,
+      "contentHash": "89fba3a82a507e89af65c15df3ebd7a6",
+      "sourceName": "contracts/interfaces/IStartProblem.sol",
+      "solcConfig": {
+        "version": "0.7.0",
+        "settings": {
+          "optimizer": {
+            "enabled": false,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        ">=0.6.0"
+      ],
+      "artifacts": [
+        "IStartProblem"
       ]
     },
     "C:\\Users\\Andrew\\Documents\\Blockchain\\diskovery\\node_modules\\@openzeppelin\\contracts\\utils\\EnumerableSet.sol": {
@@ -360,7 +462,7 @@
       ]
     },
     "C:\\Users\\Andrew\\Documents\\Blockchain\\diskovery\\contracts\\tokens\\RegToken.sol": {
-      "lastModificationDate": 1619987975004,
+      "lastModificationDate": 1619994110431,
       "contentHash": "7bb5354c9f3e52224e5c1b8c8133ac8f",
       "sourceName": "contracts/tokens/RegToken.sol",
       "solcConfig": {
@@ -396,7 +498,7 @@
       ]
     },
     "C:\\Users\\Andrew\\Documents\\Blockchain\\diskovery\\contracts\\tokens\\ProbToken.sol": {
-      "lastModificationDate": 1619987967643,
+      "lastModificationDate": 1619994105230,
       "contentHash": "b3be66255a0ac2133de9979ba618978a",
       "sourceName": "contracts/tokens/ProbToken.sol",
       "solcConfig": {
@@ -432,7 +534,7 @@
       ]
     },
     "C:\\Users\\Andrew\\Documents\\Blockchain\\diskovery\\contracts\\tokens\\Disk.sol": {
-      "lastModificationDate": 1619987959473,
+      "lastModificationDate": 1619994102793,
       "contentHash": "923234fb919641cfe945a5d0e8d372cd",
       "sourceName": "contracts/tokens/Disk.sol",
       "solcConfig": {
@@ -793,9 +895,48 @@
         "IERC165"
       ]
     },
+    "C:\\Users\\Andrew\\Documents\\Blockchain\\diskovery\\contracts\\StartProblem.sol": {
+      "lastModificationDate": 1620012830304,
+      "contentHash": "bf13a4d0e843208f7ae9e8b38d80170b",
+      "sourceName": "contracts/StartProblem.sol",
+      "solcConfig": {
+        "version": "0.7.0",
+        "settings": {
+          "optimizer": {
+            "enabled": false,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [
+        "./ProblemNFT.sol",
+        "@openzeppelin/contracts/math/SafeMath.sol",
+        "./interfaces/IERC20S.sol",
+        "./interfaces/IRegistry.sol"
+      ],
+      "versionPragmas": [
+        ">=0.6.0"
+      ],
+      "artifacts": [
+        "StartProblem"
+      ]
+    },
     "C:\\Users\\Andrew\\Documents\\Blockchain\\diskovery\\contracts\\ProblemNFT.sol": {
-      "lastModificationDate": 1619995313932,
-      "contentHash": "48a56abc425337c2574ba2adcf56bb72",
+      "lastModificationDate": 1620013229835,
+      "contentHash": "c1cd2c280373d2384f2cacd4a9befa3e",
       "sourceName": "contracts/ProblemNFT.sol",
       "solcConfig": {
         "version": "0.7.0",
@@ -821,11 +962,9 @@
       },
       "imports": [
         "@openzeppelin/contracts/token/ERC721/ERC721.sol",
-        "@openzeppelin/contracts/utils/Counters.sol",
         "@openzeppelin/contracts/math/SafeMath.sol",
         "./interfaces/IERC20S.sol",
-        "./interfaces/IRegistry.sol",
-        "hardhat/console.sol"
+        "./interfaces/IRegistry.sol"
       ],
       "versionPragmas": [
         ">=0.6.0"
@@ -870,40 +1009,6 @@
         "Counters"
       ]
     },
-    "C:\\Users\\Andrew\\Documents\\Blockchain\\diskovery\\contracts\\interfaces\\IRegistry.sol": {
-      "lastModificationDate": 1619994531327,
-      "contentHash": "68b0587795f0b8723f280fd14e61f83e",
-      "sourceName": "contracts/interfaces/IRegistry.sol",
-      "solcConfig": {
-        "version": "0.7.0",
-        "settings": {
-          "optimizer": {
-            "enabled": false,
-            "runs": 200
-          },
-          "outputSelection": {
-            "*": {
-              "*": [
-                "abi",
-                "evm.bytecode",
-                "evm.deployedBytecode",
-                "evm.methodIdentifiers"
-              ],
-              "": [
-                "ast"
-              ]
-            }
-          }
-        }
-      },
-      "imports": [],
-      "versionPragmas": [
-        ">=0.6.0"
-      ],
-      "artifacts": [
-        "IRegistry"
-      ]
-    },
     "C:\\Users\\Andrew\\Documents\\Blockchain\\diskovery\\node_modules\\hardhat\\console.sol": {
       "lastModificationDate": 1619400789471,
       "contentHash": "cc4777addd464ea56fa35b1c45df0591",
@@ -938,47 +1043,8 @@
         "console"
       ]
     },
-    "C:\\Users\\Andrew\\Documents\\Blockchain\\diskovery\\contracts\\StartProblem.sol": {
-      "lastModificationDate": 1619995364738,
-      "contentHash": "e70b87899f35a3845499f00e08913a1f",
-      "sourceName": "contracts/StartProblem.sol",
-      "solcConfig": {
-        "version": "0.7.0",
-        "settings": {
-          "optimizer": {
-            "enabled": false,
-            "runs": 200
-          },
-          "outputSelection": {
-            "*": {
-              "*": [
-                "abi",
-                "evm.bytecode",
-                "evm.deployedBytecode",
-                "evm.methodIdentifiers"
-              ],
-              "": [
-                "ast"
-              ]
-            }
-          }
-        }
-      },
-      "imports": [
-        "./ProblemNFT.sol",
-        "@openzeppelin/contracts/math/SafeMath.sol",
-        "./interfaces/IERC20S.sol",
-        "./interfaces/IRegistry.sol"
-      ],
-      "versionPragmas": [
-        ">=0.6.0"
-      ],
-      "artifacts": [
-        "StartProblem"
-      ]
-    },
     "C:\\Users\\Andrew\\Documents\\Blockchain\\diskovery\\contracts\\tokens\\ContToken.sol": {
-      "lastModificationDate": 1619987983485,
+      "lastModificationDate": 1619994095184,
       "contentHash": "195d85d9ab117a407f9d3851896971ee",
       "sourceName": "contracts/tokens/ContToken.sol",
       "solcConfig": {
@@ -1011,74 +1077,6 @@
       ],
       "artifacts": [
         "ContToken"
-      ]
-    },
-    "C:\\Users\\Andrew\\Documents\\Blockchain\\diskovery\\contracts\\interfaces\\IProblemNFT.sol": {
-      "lastModificationDate": 1619994087726,
-      "contentHash": "8c61378ee249e7b6ab29052a70797d58",
-      "sourceName": "contracts/interfaces/IProblemNFT.sol",
-      "solcConfig": {
-        "version": "0.7.0",
-        "settings": {
-          "optimizer": {
-            "enabled": false,
-            "runs": 200
-          },
-          "outputSelection": {
-            "*": {
-              "*": [
-                "abi",
-                "evm.bytecode",
-                "evm.deployedBytecode",
-                "evm.methodIdentifiers"
-              ],
-              "": [
-                "ast"
-              ]
-            }
-          }
-        }
-      },
-      "imports": [],
-      "versionPragmas": [
-        ">=0.6.0"
-      ],
-      "artifacts": [
-        "IProblemNFT"
-      ]
-    },
-    "C:\\Users\\Andrew\\Documents\\Blockchain\\diskovery\\contracts\\interfaces\\IStartProblem.sol": {
-      "lastModificationDate": 1619995129425,
-      "contentHash": "89fba3a82a507e89af65c15df3ebd7a6",
-      "sourceName": "contracts/interfaces/IStartProblem.sol",
-      "solcConfig": {
-        "version": "0.7.0",
-        "settings": {
-          "optimizer": {
-            "enabled": false,
-            "runs": 200
-          },
-          "outputSelection": {
-            "*": {
-              "*": [
-                "abi",
-                "evm.bytecode",
-                "evm.deployedBytecode",
-                "evm.methodIdentifiers"
-              ],
-              "": [
-                "ast"
-              ]
-            }
-          }
-        }
-      },
-      "imports": [],
-      "versionPragmas": [
-        ">=0.6.0"
-      ],
-      "artifacts": [
-        "IStartProblem"
       ]
     }
   }

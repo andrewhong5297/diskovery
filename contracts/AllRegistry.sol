@@ -4,7 +4,6 @@ import "./PubDAO.sol";
 import "./interfaces/IERC20S.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
 
-////stores all users and roles, and if they have claimed this week yet or not.
 //should people be allowed to buy disk tokens at a base USDC price of 1 cent? meaning each 1000 tokens is 10 dollars...
 //need to add setter functions for governance of base prices and claims
 contract AllRegistry {

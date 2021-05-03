@@ -6,40 +6,57 @@ import "@openzeppelin/contracts/math/SafeMath.sol";
 import "./interfaces/IERC20S.sol";
 import "./interfaces/IRegistry.sol";
 
-//add registry, stake tokens, and burn tokens
-
 contract StartProblem {
     using SafeMath for uint256;
 
+    address admin;
+
     IERC20S usdc;
+    IERC20S prob;
+    address cont;
     address disk;
     uint256 MINIMUM_REWARD = 4000;
+    uint256 MIN_EXPIRY = 40320; //a week
+    uint256 MAX_EXPIRY = 161280; //a month
+    uint256 MAX_STAKE = 5 * 10**21; //5000 max tokens
     IRegistry reg;
 
-    // ProblemNFT[] public problems; //not sure if this is better to have, or if we just save space without this array and get function.
     mapping(bytes32 => address) public deployedProblem;
 
-    event NewProblem(bytes32 problemHash, address creator);
-    event NewProblemDeployed(bytes32 problemHash, address deployedAddress);
-
-    //add more structure to problem statements? either here or in the DAO
-    struct Problem {
-        bytes32 problemHash;
-        uint256 minimumReward;
-        string problemText;
-        address communityProposer;
-    }
-
-    mapping(bytes32 => Problem) newProblems;
+    event NewProblemDeployed(
+        bytes32 problemHash,
+        address deployedAddress,
+        address deployer,
+        string problemText,
+        uint256 minimumReward
+    );
 
     constructor(
         address _disk,
         address _reg,
-        address _usdc
+        address _usdc,
+        address _prob,
+        address _cont
     ) {
         usdc = IERC20S(_usdc);
-        disk = _disk;
+        prob = IERC20S(_prob);
         reg = IRegistry(_reg);
+        disk = _disk;
+        cont = _cont;
+        admin = msg.sender;
+    }
+
+    function setOptions(
+        uint256 _minR,
+        uint256 _maxE,
+        uint256 _minE,
+        uint256 _maxS
+    ) external {
+        require(msg.sender == admin);
+        MINIMUM_REWARD = _minR;
+        MIN_EXPIRY = _minE;
+        MAX_EXPIRY = _maxE;
+        MAX_STAKE = _maxS;
     }
 
     /*
@@ -48,44 +65,41 @@ contract StartProblem {
     function createProblem(
         bytes32 _hash,
         uint256 _minimumReward,
+        uint256 _expiry,
         string memory _text
-    ) external {
-        require(
-            newProblems[_hash].problemHash == 0,
-            "problem has been created already"
-        );
-        require(
-            _minimumReward >= MINIMUM_REWARD,
-            "must set a higher minimum reward"
-        );
-        //require this to be community
-        //recieve/burn a problem token
+    ) external returns (address) {
+        require(deployedProblem[_hash] == address(0));
+        require(_minimumReward >= MINIMUM_REWARD);
+        require(_expiry <= MAX_EXPIRY && _expiry >= MIN_EXPIRY);
+        require(reg.checkPubDAO(msg.sender) == true);
 
-        //transfer staked tokens (USDC) require transfer to be true
-        newProblems[_hash] = Problem(_hash, _minimumReward, _text, msg.sender);
-        deployNewProblem(_hash);
-        emit NewProblem(_hash, msg.sender);
-    }
+        prob.transferFrom(msg.sender, address(this), 10**18);
+        usdc.transferFrom(msg.sender, address(this), _minimumReward);
 
-    /*
-    this function should be called by any pub in the registry
-    */
-    function deployNewProblem(bytes32 _hash) internal returns (address) {
         //add CREATE2 in here later
         ProblemNFT newProblem =
             new ProblemNFT(
                 _hash,
                 disk,
-                newProblems[_hash].minimumReward,
-                newProblems[_hash].communityProposer,
-                newProblems[_hash].problemText
+                address(usdc),
+                _minimumReward,
+                msg.sender,
+                _text,
+                address(reg),
+                cont,
+                MAX_STAKE,
+                _expiry
             );
         deployedProblem[_hash] = address(newProblem);
-        // problems.push(newProblem);
+        usdc.transfer(address(newProblem), _minimumReward);
 
-        //transfer ETH or whatever from this contract to address(newProblem);
-
-        emit NewProblemDeployed(_hash, address(newProblem));
+        emit NewProblemDeployed(
+            _hash,
+            address(newProblem),
+            msg.sender,
+            _text,
+            _minimumReward
+        );
         return address(newProblem);
     }
 
@@ -99,10 +113,6 @@ contract StartProblem {
         view
         returns (address problemAddress)
     {
-        require(
-            deployedProblem[_hash] != address(0),
-            "problem not deployed yet"
-        );
         return deployedProblem[_hash];
     }
 }

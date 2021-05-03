@@ -40,7 +40,6 @@ describe("Onboarding and Registry v1", function () {
     );
     conttoken = await ContToken.connect(admin).deploy(); //mints full supply to deployer
     await conttoken.deployed()
-
     
     await disk.connect(admin).transfer(publisher.getAddress(),ethers.utils.parseUnits("1000",18))
     await regtoken.connect(admin).transfer(publisher.getAddress(),ethers.utils.parseUnits("10",18))

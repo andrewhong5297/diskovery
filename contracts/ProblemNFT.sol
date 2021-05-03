@@ -2,47 +2,29 @@ pragma solidity >=0.6.0;
 pragma experimental ABIEncoderV2;
 
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
-import "@openzeppelin/contracts/utils/Counters.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
 import "./interfaces/IERC20S.sol";
 import "./interfaces/IRegistry.sol";
 
-import "hardhat/console.sol";
-
 /*
 Contract for problems/content and staking/rewards, deployed by registered community from startproblem.sol
-
-------
-to do:
-after DAO and Registry, come back and add token transfers/burns and reward in ERC20 (just use USDC for now). 
-add constructor options on maximum user stake and expiry
 */
 contract ProblemNFT is ERC721 {
     using SafeMath for uint256;
-    using Counters for Counters.Counter;
+    uint256 _tokenId = 0;
 
     IRegistry reg; //add into constructor later
     IERC20S disk;
+    IERC20S usdc;
+    IERC20S cont;
     bytes32 problemStatementHash; //used for identifying this problem
     uint256 public totalReward;
     string public problemText;
     mapping(address => uint256) public communities; //maps to total commitments to problems
 
     //starting options to add in constructor
-    uint256 MIN_EXPIRY = 80640; //two weeks
-    uint256 MAX_EXPIRY = 80640 * 2; //a month
+    uint256 MAX_STAKE;
     uint256 EXPIRY;
-    uint256 writingStart;
-
-    Counters.Counter private _tokenIds;
-
-    //content related events/variables
-    event NewContent(
-        uint256 contentId,
-        string articleName,
-        address writer,
-        address communitySponsor
-    );
 
     struct Content {
         string name;
@@ -62,46 +44,63 @@ contract ProblemNFT is ERC721 {
     uint256 totalUserStaked;
     bool rewardsCalculated = false;
 
+    event NewContent(
+        uint256 contentId,
+        string articleName,
+        address writer,
+        address communitySponsor
+    );
+
+    event NewStake(address communitySponsor, uint256 amount);
+
+    event NewContentStake(address user, uint256 amount, uint256 tokenId);
+
+    event RewardClaimed(address writer, uint256 amount);
+
     constructor(
         bytes32 _problemStatementHash,
-        address disk_implementation,
+        address _disk,
+        address _usdc,
         uint256 _totalReward,
         address _community,
-        string memory _problemText
+        string memory _problemText,
+        address _reg,
+        address _cont,
+        uint256 _maxS,
+        uint256 _expiry
     ) public ERC721("Problem Set", "PS") {
         problemStatementHash = _problemStatementHash;
-        disk = IERC20S(disk_implementation);
-        EXPIRY = 100000; //this should be passed in constructor later with checks
-        writingStart = block.timestamp; //should there be a delay before the start?
+        disk = IERC20S(_disk);
+        usdc = IERC20S(_usdc);
+        cont = IERC20S(_cont);
+        EXPIRY = block.timestamp + _expiry;
         totalReward = _totalReward;
         communities[_community] = _totalReward; //can change this to _totalReward instead of boolean
         problemText = _problemText;
+        reg = IRegistry(_reg);
+        MAX_STAKE = _maxS;
     }
 
     //modifiers
     modifier checkExpiry(bool state) {
         if (state) {
-            require(
-                block.timestamp <= writingStart.add(EXPIRY),
-                "writing period has ended"
-            );
+            require(block.timestamp <= EXPIRY, "writing period has ended");
             _;
         }
         if (state == false) {
-            require(
-                block.timestamp >= writingStart.add(EXPIRY),
-                "writing period has not ended"
-            );
+            require(block.timestamp >= EXPIRY, "writing period has not ended");
             _;
         }
     }
 
     //function that allows anyone to add to totalReward anytime before expiry
     function addStake(uint256 _amount) external {
-        //transferFrom and check balance before calling this
-        //check if msg.sender is part of pubdaos mapping
+        require(reg.checkPubDAO(msg.sender) == true);
+        usdc.transferFrom(msg.sender, address(this), _amount);
         communities[msg.sender] = communities[msg.sender].add(_amount);
         totalReward = totalReward.add(_amount); //or msg.value if we make this payable
+
+        emit NewStake(msg.sender, _amount);
     }
 
     /*
@@ -112,42 +111,34 @@ contract ProblemNFT is ERC721 {
         string calldata _name,
         bytes32 _contentHash
     ) external returns (bool) {
-        //add check that (block.timestamp <= writingStart + EXPIRY)
-        require(
-            communities[msg.sender] >= 0,
-            "Community did not stake, and can't publish"
-        );
-        require(
-            writerContent[_writer] == 0,
-            "Writer has already published once"
-        );
+        //add checkExpiry(true)
+        require(communities[msg.sender] >= 0);
+        require(writerContent[_writer] == 0);
 
-        //recieve/burn content token
-        _tokenIds.increment();
-        _safeMint(_writer, _tokenIds.current());
+        cont.transferFrom(msg.sender, address(this), 10**18);
+        _tokenId = _tokenId.add(1);
+        _safeMint(_writer, _tokenId);
 
         all_content.push(
             Content(_name, _writer, msg.sender, _contentHash, 0, false)
         );
-        writerContent[_writer] = _tokenIds.current();
+        writerContent[_writer] = _tokenId;
 
-        emit NewContent(_tokenIds.current(), _name, _writer, msg.sender);
+        emit NewContent(_tokenId, _name, _writer, msg.sender);
         return true;
     }
 
     function stakeContent(uint256 _amount, uint256 _contentId) public {
-        require(
-            all_content[_contentId.sub(1)].community != msg.sender,
-            "community cannot stake their own article"
-        );
-        require(_contentId > 0, "contentId starts from 1");
-        require(
-            writerContent[msg.sender] != _contentId,
-            "Writer cannot stake their own article"
-        );
-        //add checkExpiry after testing
+        require(all_content[_contentId.sub(1)].community != msg.sender);
+        require(_contentId > 0);
+        require(writerContent[msg.sender] != _contentId);
+        //add checkExpiry(true)
 
-        //add check that total user stake is not > 5000,
+        disk.transferFrom(msg.sender, address(this), _amount);
+
+        require(
+            contentUserStake[_contentId][msg.sender].add(_amount) <= MAX_STAKE
+        );
         contentUserStake[_contentId][msg.sender] = contentUserStake[_contentId][
             msg.sender
         ]
@@ -160,8 +151,15 @@ contract ProblemNFT is ERC721 {
             .add(_amount); //come back to debug this
         totalUserStaked = totalUserStaked.add(_amount);
 
-        //this should be transferred to writer and community right away
-        //need an event added here
+        //transfer to writer and community
+        uint256 writerAmount = mulDiv(_amount, 7, 10);
+        disk.transfer(all_content[_contentId.sub(1)].writer, writerAmount);
+        disk.transfer(
+            all_content[_contentId.sub(1)].community,
+            _amount.sub(writerAmount)
+        );
+
+        emit NewContentStake(msg.sender, _amount, _contentId);
     }
 
     /*
@@ -170,8 +168,8 @@ contract ProblemNFT is ERC721 {
 
     ///@notice normalizes content stakes, then allocates totalReward.
     function rewardSplit() external {
-        //add checkExpiry after testing
-        require(rewardsCalculated == false, "rewards already calculated");
+        //add checkExpiry(false)
+        require(rewardsCalculated == false, "calc");
         for (uint256 i = 0; i < all_content.length; i++) {
             all_content[i].contentReward = mulDiv(
                 all_content[i].contentReward,
@@ -183,23 +181,18 @@ contract ProblemNFT is ERC721 {
     }
 
     function claimWinnings() external returns (uint256 transferAmount) {
-        //add expiryCheck after testing
-        require(
-            rewardsCalculated == true,
-            "rewards need to be calculated first"
-        );
+        require(rewardsCalculated == true, "need calc");
         uint256 contentId = writerContent[msg.sender];
         require(
             all_content[contentId].rewardClaimed == false,
-            "reward already claimed"
+            "reward claimed"
         );
 
         transferAmount = all_content[contentId.sub(1)].contentReward;
+        usdc.transfer(msg.sender, transferAmount);
         all_content[contentId.sub(1)].rewardClaimed = true;
 
-        console.log("sent to writer: ", transferAmount);
-        //need claim event here
-        //transfer from contract to msg.sender after checking their winning mapping.
+        emit RewardClaimed(msg.sender, transferAmount);
     }
 
     /* 

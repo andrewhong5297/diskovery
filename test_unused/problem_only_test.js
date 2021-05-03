@@ -7,7 +7,7 @@ const BN = require('bn.js');
 
 //make sure you've switched defaultnetwork to Kovan and put a mnemonic.txt file in the test folder
 describe("ProblemNFT v1", function () {
-  let problemNFT, disk, startProblem;
+  let problemNFT, disk, startProblem, usdc;
   let docHash;
   let writer1, writer2, publisher, user, governance;
 
@@ -22,26 +22,37 @@ describe("ProblemNFT v1", function () {
     disk = await Disk.connect(governance).deploy(); //mints full supply to deployer
     await disk.deployed()
 
+    const USDC = await ethers.getContractFactory(
+       "Disk"
+    );
+    usdc = await USDC.connect(governance).deploy(); //mints full supply to deployer
+    await usdc.deployed()
+
     const StartProblem = await ethers.getContractFactory(
       "StartProblem"
     )  
 
-    startProblem = await StartProblem.connect(governance).deploy(disk.address, governance.getAddress(),disk.address); //replace with registry and USDC address later
+    startProblem = await StartProblem.connect(governance).deploy(disk.address, governance.getAddress(),usdc.address); //replace with registry and USDC address later
     await startProblem.deployed()
   });
 
-  it("deploy a new problem", async () => {
+  it("deploy a new problem", async () => {    
+    await usdc.connect(governance).transfer(publisher.getAddress(), ethers.utils.parseUnits("4000",18))
+
     const topic = -1234;
     problemHash = "0x"+(new BN(String(topic))).toTwos(256).toString('hex',64);
 
-    //add USDC approval
-    await startProblem.connect(governance).createProblem(problemHash,ethers.BigNumber.from("4000"),"What is our motto?")
+    await usdc.connect(publisher).approve(startProblem.address, ethers.utils.parseUnits("400000",18))
+    await startProblem.connect(publisher).createProblem(problemHash,ethers.utils.parseUnits("4000",18),"What is our motto?")
 
     const problemAddress = await startProblem.getProblem(problemHash)
     problemNFT = new ethers.Contract(
       problemAddress,
       abiProblem,
-      governance)    
+      publisher)    
+    
+    const problemBalance = await usdc.balanceOf(problemAddress);
+    console.log("new problemNFT has USDC balance of: ", problemBalance.toString());
     // console.log(problemNFT)
   })
 
@@ -70,5 +81,9 @@ describe("ProblemNFT v1", function () {
   it("normalize rewards and claim writer claim rewards", async () => {
     await problemNFT.connect(publisher).rewardSplit() //normalizes rewards
     await problemNFT.connect(writer1).claimWinnings() 
+
+    const balance = await usdc.balanceOf(writer1.getAddress());
+    expect(balance.toString()).to.equal("2666666666666666666666")
+    console.log("writer1 usdc balance post claim: ", balance.toString())
   })
 });
