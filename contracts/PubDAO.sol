@@ -12,6 +12,7 @@ contract PubDAO is AccessControl {
     bytes32 public constant LEADER_ROLE = keccak256("LEADER"); //votes on content and transactions (purchase of registration, problem, and content tokens)
     bytes32 public constant EDITOR_ROLE = keccak256("EDITOR"); //votes on content and calls final publication to NFT
 
+    IERC20S usdc;
     IERC20S disk;
     IERC20S reg;
     IERC20S prob;
@@ -22,17 +23,10 @@ contract PubDAO is AccessControl {
 
     //assign leader - grantRole(LEADER_ROLE) - done, need to make this a voting process later
     //asign editor - grantRole(EDITOR_ROLE) - done, need to make this a voting process later
-    //leader executes registry and claim below - done
-    //manage some token (USDC) used for staking problem
-    //Editor create problem - done
-    //Leaders submit problem - done
-    //Leaders stake problem - done
-    //User submits content - done
-    //Editor reviews and publishes to problem - done
-
-    //add voting minimums/processes
+    //add voting processes, this will be a pain since it probably requires it's own expiry/quorum process.
 
     mapping(bytes32 => Content) public proposedContent;
+    mapping(bytes32 => Problem) public proposedProblem;
 
     struct Content {
         // Unique id for looking up a content
@@ -57,10 +51,12 @@ contract PubDAO is AccessControl {
         bytes32 problemHash;
         uint256 minimumStake;
         string problemText;
+        uint256 expiry;
     }
 
     constructor(
         address _disk,
+        address _usdc,
         address _regToken,
         address _probToken,
         address _contToken,
@@ -68,6 +64,7 @@ contract PubDAO is AccessControl {
         address _startProblem
     ) public {
         disk = IERC20S(_disk);
+        usdc = IERC20S(_usdc);
         reg = IERC20S(_regToken);
         prob = IERC20S(_probToken);
         cont = IERC20S(_contToken);
@@ -83,7 +80,7 @@ contract PubDAO is AccessControl {
     function buyTokens(uint256 _tokens, uint256 _tokenType) external {
         require(hasRole(LEADER_ROLE, msg.sender) == true, "Not a leader");
 
-        //approve transfer
+        disk.approve(address(registry), _tokens);
         registry.buyTokens(_tokens, _tokenType);
     }
 
@@ -94,21 +91,37 @@ contract PubDAO is AccessControl {
         registry.registerPub();
     }
 
-    function createProblem() external {
+    function createProblem(
+        bytes32 _hash,
+        uint256 _reward,
+        string memory _text,
+        uint256 _expiry
+    ) external {
         require(
             hasRole(LEADER_ROLE, msg.sender) == true ||
                 hasRole(EDITOR_ROLE, msg.sender) == true,
             "Not an editor or leader"
         );
-
-        //add problem struct and tracking
+        require(
+            proposedProblem[_hash].problemHash == 0,
+            "problem created already"
+        );
+        (uint256 minE, uint256 maxE) = startProblem.getExpiryBounds();
+        require(_expiry <= maxE && _expiry >= minE);
+        require(_reward >= startProblem.getMinRewards());
+        proposedProblem[_hash] = Problem(_hash, _reward, _text, _expiry);
     }
 
-    function submitProblem() external {
+    function submitProblem(bytes32 _hash) external {
         require(hasRole(LEADER_ROLE, msg.sender) == true, "Not an editor");
-        //approve transfer
-
-        //similar to content flow
+        Problem memory tempProblem = proposedProblem[_hash];
+        usdc.approve(address(startProblem), tempProblem.minimumStake);
+        startProblem.createProblem(
+            tempProblem.problemHash,
+            tempProblem.minimumStake,
+            tempProblem.expiry,
+            tempProblem.problemText
+        );
     }
 
     function stakeProblem(uint256 _amount, bytes32 _hash) external {
@@ -117,7 +130,7 @@ contract PubDAO is AccessControl {
         require(tempContent.published == true, "content not yet published");
         IProblemNFT problemNFT = IProblemNFT(tempContent.problemNFT);
 
-        //approve transfer
+        usdc.approve(address(problemNFT), _amount);
         problemNFT.addStake(_amount);
     }
 
@@ -151,7 +164,7 @@ contract PubDAO is AccessControl {
         require(tempContent.rejected == false, "content already rejected");
         IProblemNFT problemNFT = IProblemNFT(tempContent.problemNFT);
 
-        //transfer and approve functions
+        cont.approve(address(problemNFT), 10**18);
         problemNFT.newContent(
             tempContent.writer,
             tempContent.contentName,

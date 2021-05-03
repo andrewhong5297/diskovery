@@ -115,4 +115,12 @@ contract StartProblem {
     {
         return deployedProblem[_hash];
     }
+
+    function getExpiryBounds() external view returns (uint256, uint256) {
+        return (MIN_EXPIRY, MAX_EXPIRY);
+    }
+
+    function getMinRewards() external view returns (uint256) {
+        return MINIMUM_REWARD;
+    }
 }

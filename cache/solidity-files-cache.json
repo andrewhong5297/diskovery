@@ -2,7 +2,7 @@
   "_format": "hh-sol-cache-2",
   "files": {
     "C:\\Users\\Andrew\\Documents\\Blockchain\\diskovery\\contracts\\AllRegistry.sol": {
-      "lastModificationDate": 1619995655216,
+      "lastModificationDate": 1620011867915,
       "contentHash": "7c765f9626f561dbc86c6854d442795f",
       "sourceName": "contracts/AllRegistry.sol",
       "solcConfig": {
@@ -40,8 +40,8 @@
       ]
     },
     "C:\\Users\\Andrew\\Documents\\Blockchain\\diskovery\\contracts\\PubDAO.sol": {
-      "lastModificationDate": 1619995280992,
-      "contentHash": "679d703e349bf3635341a1d9e21772e3",
+      "lastModificationDate": 1620017064520,
+      "contentHash": "fb6963d7cc97dd40d47119e1a64cdfe0",
       "sourceName": "contracts/PubDAO.sol",
       "solcConfig": {
         "version": "0.7.0",
@@ -254,8 +254,8 @@
       ]
     },
     "C:\\Users\\Andrew\\Documents\\Blockchain\\diskovery\\contracts\\interfaces\\IStartProblem.sol": {
-      "lastModificationDate": 1619995129425,
-      "contentHash": "89fba3a82a507e89af65c15df3ebd7a6",
+      "lastModificationDate": 1620017032642,
+      "contentHash": "fb930a1f12079c69bd7f945a310af041",
       "sourceName": "contracts/interfaces/IStartProblem.sol",
       "solcConfig": {
         "version": "0.7.0",
@@ -896,8 +896,8 @@
       ]
     },
     "C:\\Users\\Andrew\\Documents\\Blockchain\\diskovery\\contracts\\StartProblem.sol": {
-      "lastModificationDate": 1620015602303,
-      "contentHash": "e6ba778424eef25a910d85106cfc0051",
+      "lastModificationDate": 1620017025217,
+      "contentHash": "1a210745c92fc4a821a59235517dfcd6",
       "sourceName": "contracts/StartProblem.sol",
       "solcConfig": {
         "version": "0.7.0",
