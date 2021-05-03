@@ -12,8 +12,8 @@ contract StartProblem {
     address admin;
 
     IERC20S usdc;
-    IERC20S prob;
-    address cont;
+    // IERC20S prob;
+    // address cont;
     address disk;
     uint256 MINIMUM_REWARD = 4000;
     uint256 MIN_EXPIRY = 40320; //a week
@@ -34,15 +34,14 @@ contract StartProblem {
     constructor(
         address _disk,
         address _reg,
-        address _usdc,
-        address _prob,
-        address _cont
-    ) {
+        address _usdc // address _prob,
+    ) // address _cont
+    {
         usdc = IERC20S(_usdc);
-        prob = IERC20S(_prob);
+        // prob = IERC20S(_prob);
         reg = IRegistry(_reg);
         disk = _disk;
-        cont = _cont;
+        // cont = _cont;
         admin = msg.sender;
     }
 
@@ -73,7 +72,7 @@ contract StartProblem {
         require(_expiry <= MAX_EXPIRY && _expiry >= MIN_EXPIRY);
         require(reg.checkPubDAO(msg.sender) == true);
 
-        require(prob.transferFrom(msg.sender, address(this), 10**18), "prob");
+        // require(prob.transferFrom(msg.sender, address(this), 10**18), "prob");
         require(
             usdc.transferFrom(msg.sender, address(this), _minimumReward),
             "usdc"
@@ -89,7 +88,7 @@ contract StartProblem {
                 msg.sender,
                 // _text,
                 address(reg),
-                cont,
+                // cont,
                 MAX_STAKE,
                 _expiry
             );

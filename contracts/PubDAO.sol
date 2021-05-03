@@ -20,15 +20,15 @@ contract PubDAO is AccessControl {
 
     IERC20S usdc;
     IERC20S disk;
-    IERC20S reg;
-    IERC20S prob;
-    IERC20S cont;
+    // IERC20S reg;
+    // IERC20S prob;
+    // IERC20S cont;
 
     IRegistry registry;
     IStartProblem startProblem;
 
     uint256 quorum = 0;
-    uint256 MIN_CONTENT_STAKE = 2 * 10**20; //starts at 200 disk minimum
+    // uint256 MIN_CONTENT_STAKE = 2 * 10**20; //starts at 200 disk minimum
 
     mapping(bytes32 => Content) public proposedContent;
     mapping(bytes32 => Problem) public proposedProblem;
@@ -41,7 +41,7 @@ contract PubDAO is AccessControl {
         // Writer behind content submitted
         address writer;
         // Stake behind the content submitted
-        uint256 diskStaked;
+        // uint256 diskStaked;
         // the address of the problemNFT
         address problemNFT;
         // The block at which problemNFT expires
@@ -68,17 +68,17 @@ contract PubDAO is AccessControl {
     constructor(
         address _disk,
         address _usdc,
-        address _regToken,
-        address _probToken,
-        address _contToken,
+        // address _regToken,
+        // address _probToken,
+        // address _contToken,
         address _registry,
         address _startProblem
     ) public {
         disk = IERC20S(_disk);
         usdc = IERC20S(_usdc);
-        reg = IERC20S(_regToken);
-        prob = IERC20S(_probToken);
-        cont = IERC20S(_contToken);
+        // reg = IERC20S(_regToken);
+        // prob = IERC20S(_probToken);
+        // cont = IERC20S(_contToken);
         registry = IRegistry(_registry);
         startProblem = IStartProblem(_startProblem);
         _setRoleAdmin(LEADER_ROLE, ADMIN_ROLE);
@@ -91,10 +91,10 @@ contract PubDAO is AccessControl {
         usdc.transfer(_to, _amount);
     }
 
-    function setContentStake(uint256 _min) external {
-        require(hasRole(ADMIN_ROLE, msg.sender), "not admin");
-        MIN_CONTENT_STAKE = _min;
-    }
+    // function setContentStake(uint256 _min) external {
+    //     require(hasRole(ADMIN_ROLE, msg.sender), "not admin");
+    //     MIN_CONTENT_STAKE = _min;
+    // }
 
     /*
     role functions, all must be called by admin only. Admin can be a multisig acct.
@@ -128,25 +128,25 @@ contract PubDAO is AccessControl {
     /*
     registry functions
     */
-    function claimTokens() external {
-        require(hasRole(LEADER_ROLE, msg.sender) == true, "Not a leader");
-        registry.claimWeeklyPub();
-    }
+    // function claimTokens() external {
+    //     require(hasRole(LEADER_ROLE, msg.sender) == true, "Not a leader");
+    //     registry.claimWeeklyPub();
+    // }
 
-    function buyTokens(uint256 _tokens, uint256 _tokenType) external {
-        require(hasRole(ADMIN_ROLE, msg.sender) == true, "Not admin");
+    // function buyTokens(uint256 _tokens, uint256 _tokenType) external {
+    //     require(hasRole(ADMIN_ROLE, msg.sender) == true, "Not admin");
 
-        disk.approve(
-            address(registry),
-            _tokens.mul(registry.checkMinimum(_tokenType))
-        );
-        registry.buyTokens(_tokens, _tokenType);
-    }
+    //     disk.approve(
+    //         address(registry),
+    //         _tokens.mul(registry.checkMinimum(_tokenType))
+    //     );
+    //     registry.buyTokens(_tokens, _tokenType);
+    // }
 
     function register() external {
         require(hasRole(ADMIN_ROLE, msg.sender) == true, "Not admin");
 
-        reg.approve(address(registry), 10**18);
+        // reg.approve(address(registry), 10**18);
         registry.registerPub();
     }
 
@@ -215,7 +215,7 @@ contract PubDAO is AccessControl {
 
     function submitProblem(bytes32 _hash) internal {
         Problem memory tempProblem = proposedProblem[_hash];
-        prob.approve(address(startProblem), 10**18); //problem token transfer
+        // prob.approve(address(startProblem), 10**18); //problem token transfer
         usdc.approve(address(startProblem), tempProblem.minimumStake);
         startProblem.createProblem(
             tempProblem.problemHash,
@@ -245,20 +245,20 @@ contract PubDAO is AccessControl {
         bytes32 _contentHash,
         string memory _contentName,
         address _problemNFT,
-        uint256 _stake,
+        // uint256 _stake,
         uint256 _expiry
     ) external {
         require(
             proposedContent[_contentHash].writer == address(0),
             "there is already content with this hash"
         );
-        require(_stake >= MIN_CONTENT_STAKE, "not enough stake");
-        disk.transferFrom(msg.sender, address(this), _stake);
+        // require(_stake >= MIN_CONTENT_STAKE, "not enough stake");
+        // disk.transferFrom(msg.sender, address(this), _stake);
         proposedContent[_contentHash] = Content(
             _contentHash,
             _contentName,
             msg.sender,
-            _stake,
+            // _stake,
             _problemNFT,
             _expiry,
             false,
@@ -275,7 +275,7 @@ contract PubDAO is AccessControl {
         require(tempContent.rejected == false, "content already rejected");
         IProblemNFT problemNFT = IProblemNFT(tempContent.problemNFT);
 
-        cont.approve(address(problemNFT), 10**18);
+        // cont.approve(address(problemNFT), 10**18);
         problemNFT.newContent(
             tempContent.writer,
             tempContent.contentName,

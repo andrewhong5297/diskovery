@@ -24,36 +24,36 @@ describe("Diskover Full Test v1", function () {
     disk = await Disk.connect(admin).deploy(); //mints full supply to deployer
     await disk.deployed()
 
-    const RegToken = await ethers.getContractFactory(
-      "RegToken"
-    );
-    regtoken = await RegToken.connect(admin).deploy(); //mints full supply to deployer
-    await regtoken.deployed()
+    // const RegToken = await ethers.getContractFactory(
+    //   "RegToken"
+    // );
+    // regtoken = await RegToken.connect(admin).deploy(); //mints full supply to deployer
+    // await regtoken.deployed()
       
-    const ProbToken = await ethers.getContractFactory(
-      "ProbToken"
-    );
-    probtoken = await ProbToken.connect(admin).deploy(); //mints full supply to deployer
-    await probtoken.deployed()
+    // const ProbToken = await ethers.getContractFactory(
+    //   "ProbToken"
+    // );
+    // probtoken = await ProbToken.connect(admin).deploy(); //mints full supply to deployer
+    // await probtoken.deployed()
 
-    const ContToken = await ethers.getContractFactory(
-      "ContToken"
-    );
-    conttoken = await ContToken.connect(admin).deploy(); //mints full supply to deployer
-    await conttoken.deployed()
+    // const ContToken = await ethers.getContractFactory(
+    //   "ContToken"
+    // );
+    // conttoken = await ContToken.connect(admin).deploy(); //mints full supply to deployer
+    // await conttoken.deployed()
     })
 
   it("deploy registry contract", async () => {
     const Registry = await ethers.getContractFactory(
       "AllRegistry"
     );
-    registry = await Registry.connect(admin).deploy(disk.address,regtoken.address,probtoken.address,conttoken.address); //mints full supply to deployer
+    registry = await Registry.connect(admin).deploy(disk.address)//regtoken.address,probtoken.address,conttoken.address); //mints full supply to deployer
     await registry.deployed()
 
     await disk.connect(admin).setRegistry(registry.address)
-    await regtoken.connect(admin).setRegistry(registry.address)
-    await probtoken.connect(admin).setRegistry(registry.address)
-    await conttoken.connect(admin).setRegistry(registry.address)    
+    // await regtoken.connect(admin).setRegistry(registry.address)
+    // await probtoken.connect(admin).setRegistry(registry.address)
+    // await conttoken.connect(admin).setRegistry(registry.address)    
   })
 
   it("deploy problem factory", async () => {
@@ -67,7 +67,7 @@ describe("Diskover Full Test v1", function () {
       "StartProblem"
     )  
 
-    startProblem = await StartProblem.connect(admin).deploy(disk.address, registry.address, usdc.address, probtoken.address, conttoken.address);
+    startProblem = await StartProblem.connect(admin).deploy(disk.address, registry.address, usdc.address)//, probtoken.address, conttoken.address);
     await startProblem.deployed()
   });
 
@@ -76,7 +76,7 @@ describe("Diskover Full Test v1", function () {
     const DAO = await ethers.getContractFactory(
       "PubDAO"
     );
-    dao = await DAO.connect(adminDao).deploy(disk.address,usdc.address,regtoken.address,probtoken.address,conttoken.address, registry.address, startProblem.address); 
+    dao = await DAO.connect(adminDao).deploy(disk.address,usdc.address, registry.address, startProblem.address); //removed regtoken.address,probtoken.address,conttoken.address
     await dao.deployed()
 
     //set leaders and editors
@@ -85,11 +85,11 @@ describe("Diskover Full Test v1", function () {
     await dao.connect(adminDao).manageLeader(leader2.getAddress(),true)
   })
 
-  it("test DAO buy reg token from Registry", async () => {
-    //normally this would have to be earned
-    await disk.connect(admin).transfer(dao.address,ethers.utils.parseUnits("500000",18)) 
-    await dao.connect(adminDao).buyTokens(ethers.utils.parseUnits("1",18),ethers.BigNumber.from("0"))
-  })
+  // xit("test DAO buy reg token from Registry", async () => {
+  //   //normally this would have to be earned
+  //   await disk.connect(admin).transfer(dao.address,ethers.utils.parseUnits("500000",18)) 
+  //   await dao.connect(adminDao).buyTokens(ethers.utils.parseUnits("1",18),ethers.BigNumber.from("0"))
+  // })
 
   it("register DAO", async () => {
     await dao.connect(adminDao).register()
@@ -98,16 +98,13 @@ describe("Diskover Full Test v1", function () {
     // console.log("publisher state: ", isPub)
   })
 
-  it("claim weekly DAO tokens, and purchase more tokens", async () => {
-    await dao.connect(leader1).claimTokens()
-    await expect(dao.connect(leader1).claimTokens()).to.be.revertedWith("pub has already claimed this week");
-  })
+  // xit("claim weekly DAO tokens, and purchase more tokens", async () => {
+  //   await dao.connect(leader1).claimTokens()
+  //   await expect(dao.connect(leader1).claimTokens()).to.be.revertedWith("pub has already claimed this week");
+  // })
   
-  it("claim weekly reader/writer tokens", async () => { 
+  it("claim weekly reader tokens", async () => { 
     await registry.connect(reader).claimWeeklyUser()
-    await registry.connect(writer1).claimWeeklyUser()
-    await registry.connect(writer2).claimWeeklyUser()
-
     await expect(registry.connect(reader).claimWeeklyUser()).to.be.revertedWith("user has already claimed this week");
   })
 

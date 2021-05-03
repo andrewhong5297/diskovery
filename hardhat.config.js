@@ -96,11 +96,11 @@ module.exports = {
     runOnCompile: true,
     disambiguatePaths: false,
   },
-    gasReporter: {
-      currency: 'USD',
-      gasPrice: 20,
-      enabled: true
-    }
+  gasReporter: {
+    currency: 'USD',
+    gasPrice: 20,
+    enabled: false
+  }
 };
 
 

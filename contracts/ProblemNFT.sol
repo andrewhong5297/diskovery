@@ -16,7 +16,7 @@ contract ProblemNFT is ERC721 {
     IRegistry reg; //add into constructor later
     IERC20S disk;
     IERC20S usdc;
-    IERC20S cont;
+    // IERC20S cont;
     bytes32 problemStatementHash; //used for identifying this problem
     uint256 public totalReward;
     // string public problemText;
@@ -64,14 +64,14 @@ contract ProblemNFT is ERC721 {
         address _community,
         // string memory _problemText,
         address _reg,
-        address _cont,
+        // address _cont,
         uint256 _maxS,
         uint256 _expiry
     ) public ERC721("Problem Set", "PS") {
         problemStatementHash = _problemStatementHash;
         disk = IERC20S(_disk);
         usdc = IERC20S(_usdc);
-        cont = IERC20S(_cont);
+        // cont = IERC20S(_cont);
         EXPIRY = block.timestamp + _expiry;
         totalReward = _totalReward;
         communities[_community] = _totalReward; //can change this to _totalReward instead of boolean
@@ -111,7 +111,7 @@ contract ProblemNFT is ERC721 {
             }
         }
 
-        cont.transferFrom(msg.sender, address(this), 10**18);
+        // cont.transferFrom(msg.sender, address(this), 10**18);
         _tokenId = _tokenId.add(1);
         _safeMint(_writer, _tokenId);
 
@@ -152,13 +152,13 @@ contract ProblemNFT is ERC721 {
             .add(_amount); //come back to debug this
         totalUserStaked = totalUserStaked.add(_amount);
 
-        //transfer to writer and community
-        uint256 writerAmount = mulDiv(_amount, 7, 10);
-        disk.transfer(allContent[_contentId].writer, writerAmount);
-        disk.transfer(
-            allContent[_contentId].community,
-            _amount.sub(writerAmount)
-        );
+        // //transfer to writer and community
+        // uint256 writerAmount = mulDiv(_amount, 7, 10);
+        // disk.transfer(allContent[_contentId].writer, writerAmount);
+        // disk.transfer(
+        //     allContent[_contentId].community,
+        //     _amount.sub(writerAmount)
+        // );
 
         emit NewContentStake(msg.sender, _amount, _contentId);
     }
