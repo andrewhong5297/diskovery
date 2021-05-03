@@ -1,5 +1,7 @@
 require("@nomiclabs/hardhat-waffle");
 require("@nomiclabs/hardhat-etherscan");
+require('hardhat-contract-sizer');
+
 const fs = require("fs");
 
 const defaultNetwork = "localhost"; 
@@ -87,6 +89,11 @@ module.exports = {
   },
   mocha: {
     timeout: 10000000
+  },
+  contractSizer: {
+    alphaSort: true,
+    runOnCompile: true,
+    disambiguatePaths: false,
   }
 };
 

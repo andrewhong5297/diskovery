@@ -2,46 +2,104 @@
 pragma solidity >=0.6.0;
 
 import "./ProblemNFT.sol";
-
-// import "./AllRegistry.sol"; add interface later
+import "@openzeppelin/contracts/math/SafeMath.sol";
+import "./interfaces/IERC20S.sol";
+import "./interfaces/IRegistry.sol";
 
 contract StartProblem {
-    //how to store problem queue (should there be a problem queue? does problem need to have a minimum stake before NFT is deployed? Should stake be in disk or USDC?
+    using SafeMath for uint256;
+
+    address admin;
+
+    IERC20S usdc;
+    IERC20S prob;
+    address cont;
     address disk;
-    // AllRegistry reg;
+    uint256 MINIMUM_REWARD = 4000;
+    uint256 MIN_EXPIRY = 40320; //a week
+    uint256 MAX_EXPIRY = 161280; //a month
+    uint256 MAX_STAKE = 5 * 10**21; //5000 max tokens
+    IRegistry reg;
 
-    mapping(bytes32 => address) public hashToProblem;
-    // ProblemNFT[] public problems;
+    mapping(bytes32 => address) public deployedProblem;
 
-    event NewProblem(
-        //remember you already set up theGraph for this
+    event NewProblemDeployed(
         bytes32 problemHash,
-        address creator
+        address deployedAddress,
+        address deployer,
+        string problemText,
+        uint256 minimumReward
     );
 
-    constructor(address _disk, address _reg) {
+    constructor(
+        address _disk,
+        address _reg,
+        address _usdc,
+        address _prob,
+        address _cont
+    ) {
+        usdc = IERC20S(_usdc);
+        prob = IERC20S(_prob);
+        reg = IRegistry(_reg);
         disk = _disk;
-        // reg = AllRegistry(_reg);
+        cont = _cont;
+        admin = msg.sender;
+    }
+
+    function setOptions(
+        uint256 _minR,
+        uint256 _maxE,
+        uint256 _minE,
+        uint256 _maxS
+    ) external {
+        require(msg.sender == admin);
+        MINIMUM_REWARD = _minR;
+        MIN_EXPIRY = _minE;
+        MAX_EXPIRY = _maxE;
+        MAX_STAKE = _maxS;
     }
 
     /*
-    this function should be called by any pub in the registry
+    pre_deploy functions
     */
-    function deployNewProblem(bytes32 _hash) external returns (address) {
-        require(
-            hashToProblem[_hash] == address(0),
-            "This problem has been created already"
-        );
-        //require(reg.pubRegistry[msg.sender]==true,"not a publication, can't submit a problem");
-        //burn a problem token, revert if this fails
+    function createProblem(
+        bytes32 _hash,
+        uint256 _minimumReward,
+        uint256 _expiry,
+        string memory _text
+    ) external returns (address) {
+        require(deployedProblem[_hash] == address(0));
+        require(_minimumReward >= MINIMUM_REWARD);
+        require(_expiry <= MAX_EXPIRY && _expiry >= MIN_EXPIRY);
+        require(reg.checkPubDAO(msg.sender) == true);
+
+        prob.transferFrom(msg.sender, address(this), 10**18);
+        usdc.transferFrom(msg.sender, address(this), _minimumReward);
 
         //add CREATE2 in here later
-        ProblemNFT newProblem = new ProblemNFT(_hash, disk);
-        hashToProblem[_hash] = address(newProblem);
-        // problems.push(newProblem);
+        ProblemNFT newProblem =
+            new ProblemNFT(
+                _hash,
+                disk,
+                address(usdc),
+                _minimumReward,
+                msg.sender,
+                // _text,
+                address(reg),
+                cont,
+                MAX_STAKE,
+                _expiry
+            );
+        deployedProblem[_hash] = address(newProblem);
+        usdc.transfer(address(newProblem), _minimumReward);
 
-        emit NewProblem(_hash, msg.sender);
-
+        emit NewProblemDeployed(
+            _hash,
+            address(newProblem),
+            msg.sender,
+            _text,
+            _minimumReward
+        );
         return address(newProblem);
     }
 
@@ -55,6 +113,14 @@ contract StartProblem {
         view
         returns (address problemAddress)
     {
-        return hashToProblem[_hash];
+        return deployedProblem[_hash];
+    }
+
+    function getExpiryBounds() external view returns (uint256, uint256) {
+        return (MIN_EXPIRY, MAX_EXPIRY);
+    }
+
+    function getMinRewards() external view returns (uint256) {
+        return MINIMUM_REWARD;
     }
 }

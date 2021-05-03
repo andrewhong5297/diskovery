@@ -1,76 +1,183 @@
 pragma solidity >=0.6.0;
-//fill this out after checking with Suhana, since content will probably be submitted here as a proposal. same as problem.
+//make this a minimal proxy for practice, and because this needs to be avail.
 
-//combine comp governance + daohaus here?
-//we do need execute for buy orders, do we want weighted votes? can time weighted be enough?
-//could there be some way of bridging the DAO's tokens in a one time mint?
 import "@openzeppelin/contracts/access/AccessControl.sol";
+import "./interfaces/IERC20S.sol";
+import "./interfaces/IRegistry.sol";
+import "./interfaces/IProblemNFT.sol";
+import "./interfaces/IStartProblem.sol";
 
 contract PubDAO is AccessControl {
-    bytes32 public constant MEMBER_ROLE = keccak256("MEMBER"); //votes on content only
+    //admin has master control on roles
     bytes32 public constant LEADER_ROLE = keccak256("LEADER"); //votes on content and transactions (purchase of registration, problem, and content tokens)
     bytes32 public constant EDITOR_ROLE = keccak256("EDITOR"); //votes on content and calls final publication to NFT
 
-    //DAO needs to have voting proposals
-    //DAO needs to be able to execute functions
-    //DAO needs to have treasury management of ETH and of disk tokens
-    //DAO can set their minimum disk tokens for submissions, to with minimum of 200 disk and maximum of 2000 disk (max two weeks wait)
+    IERC20S usdc;
+    IERC20S disk;
+    IERC20S reg;
+    IERC20S prob;
+    IERC20S cont;
 
-    ////to ask suhana
-    //what roles do we need, and who has power.
-    //what states do we need
-    //what criteria do we need
+    IRegistry registry;
+    IStartProblem startProblem;
 
-    struct Proposal {
-        // Unique id for looking up a proposal
-        uint256 id;
-        // Creator of the proposal
-        address proposer;
-        // The timestamp that the proposal will be available for execution, set once the vote succeeds
-        uint256 eta;
-        // the ordered list of target addresses for calls to be made
-        address[] targets;
-        // The ordered list of values (i.e. msg.value) to be passed to the calls to be made
-        uint256[] values;
-        // The ordered list of function signatures to be called
-        string[] signatures;
-        // The ordered list of calldata to be passed to each call
-        bytes[] calldatas;
-        // The block at which voting begins: holders must delegate their votes prior to this block
-        uint256 startBlock;
-        // The block at which voting ends: votes must be cast prior to this block
+    //assign leader - grantRole(LEADER_ROLE) - done, need to make this a voting process later
+    //asign editor - grantRole(EDITOR_ROLE) - done, need to make this a voting process later
+    //add voting processes, this will be a pain since it probably requires it's own expiry/quorum process.
+
+    mapping(bytes32 => Content) public proposedContent;
+    mapping(bytes32 => Problem) public proposedProblem;
+
+    struct Content {
+        // Unique id for looking up a content
+        bytes32 contentHash;
+        // Name of content
+        string contentName;
+        // Writer behind content submitted
+        address writer;
+        // Stake behind the content submitted
+        uint256 diskStaked;
+        // the address of the problemNFT
+        address problemNFT;
+        // The block at which problemNFT expires
         uint256 endBlock;
-        // Current number of votes in favor of this proposal
-        uint256 forVotes;
-        // Current number of votes in opposition to this proposal
-        uint256 againstVotes;
-        // Flag marking whether the proposal has been canceled
-        bool canceled;
-        // Flag marking whether the proposal has been executed
-        bool executed;
-        // Receipts of ballots for the entire set of voters
-        mapping(address => Receipt) receipts;
+        // if rejected by editor
+        bool rejected;
+        // Flag marking whether the proposal has been published
+        bool published;
     }
 
-    /// @notice Ballot receipt record for a voter
-    struct Receipt {
-        // Whether or not a vote has been cast
-        bool hasVoted;
-        // Whether or not the voter supports the proposal
-        bool support;
-        // The number of votes the voter had, which were cast
-        uint96 votes;
+    struct Problem {
+        bytes32 problemHash;
+        uint256 minimumStake;
+        string problemText;
+        uint256 expiry;
     }
 
-    /// @notice Possible states that a proposal may be in
-    enum ProposalState {
-        Pending,
-        Active,
-        Canceled,
-        Defeated,
-        Succeeded,
-        Queued,
-        Expired,
-        Executed
+    constructor(
+        address _disk,
+        address _usdc,
+        address _regToken,
+        address _probToken,
+        address _contToken,
+        address _registry,
+        address _startProblem
+    ) public {
+        disk = IERC20S(_disk);
+        usdc = IERC20S(_usdc);
+        reg = IERC20S(_regToken);
+        prob = IERC20S(_probToken);
+        cont = IERC20S(_contToken);
+        registry = IRegistry(_registry);
+        startProblem = IStartProblem(_startProblem);
+    }
+
+    function claimTokens() external {
+        require(hasRole(LEADER_ROLE, msg.sender) == true, "Not a leader");
+        registry.claimWeeklyPub();
+    }
+
+    function buyTokens(uint256 _tokens, uint256 _tokenType) external {
+        require(hasRole(LEADER_ROLE, msg.sender) == true, "Not a leader");
+
+        disk.approve(address(registry), _tokens);
+        registry.buyTokens(_tokens, _tokenType);
+    }
+
+    function register() external {
+        require(hasRole(LEADER_ROLE, msg.sender) == true, "Not a leader");
+
+        reg.approve(address(registry), 10**18);
+        registry.registerPub();
+    }
+
+    function createProblem(
+        bytes32 _hash,
+        uint256 _reward,
+        string memory _text,
+        uint256 _expiry
+    ) external {
+        require(
+            hasRole(LEADER_ROLE, msg.sender) == true ||
+                hasRole(EDITOR_ROLE, msg.sender) == true,
+            "Not an editor or leader"
+        );
+        require(
+            proposedProblem[_hash].problemHash == 0,
+            "problem created already"
+        );
+        (uint256 minE, uint256 maxE) = startProblem.getExpiryBounds();
+        require(_expiry <= maxE && _expiry >= minE);
+        require(_reward >= startProblem.getMinRewards());
+        proposedProblem[_hash] = Problem(_hash, _reward, _text, _expiry);
+    }
+
+    function submitProblem(bytes32 _hash) external {
+        require(hasRole(LEADER_ROLE, msg.sender) == true, "Not an editor");
+        Problem memory tempProblem = proposedProblem[_hash];
+        usdc.approve(address(startProblem), tempProblem.minimumStake);
+        startProblem.createProblem(
+            tempProblem.problemHash,
+            tempProblem.minimumStake,
+            tempProblem.expiry,
+            tempProblem.problemText
+        );
+    }
+
+    function stakeProblem(uint256 _amount, bytes32 _hash) external {
+        require(hasRole(LEADER_ROLE, msg.sender) == true, "Not a leader");
+        Content memory tempContent = proposedContent[_hash];
+        require(tempContent.published == true, "content not yet published");
+        IProblemNFT problemNFT = IProblemNFT(tempContent.problemNFT);
+
+        usdc.approve(address(problemNFT), _amount);
+        problemNFT.addStake(_amount);
+    }
+
+    function submitContent(
+        bytes32 _hash,
+        string memory _contentName,
+        address _problemNFT,
+        uint256 _stake,
+        uint256 _expiry
+    ) external {
+        require(
+            proposedContent[_hash].writer == address(0),
+            "there is already content with this hash"
+        );
+        proposedContent[_hash] = Content(
+            _hash,
+            _contentName,
+            msg.sender,
+            _stake,
+            _problemNFT,
+            _expiry,
+            false,
+            false
+        );
+    }
+
+    function publishContent(bytes32 _hash) external {
+        require(hasRole(EDITOR_ROLE, msg.sender) == true, "Not an editor");
+        Content memory tempContent = proposedContent[_hash];
+        require(tempContent.published == false, "content already published");
+        require(tempContent.rejected == false, "content already rejected");
+        IProblemNFT problemNFT = IProblemNFT(tempContent.problemNFT);
+
+        cont.approve(address(problemNFT), 10**18);
+        problemNFT.newContent(
+            tempContent.writer,
+            tempContent.contentName,
+            tempContent.contentHash
+        );
+        proposedContent[_hash].published = true;
+    }
+
+    function rejectContent(bytes32 _hash) external {
+        require(hasRole(EDITOR_ROLE, msg.sender) == true, "Not an editor");
+        Content memory tempContent = proposedContent[_hash];
+        require(tempContent.published == false, "content already published");
+        require(tempContent.rejected == false, "content already rejected");
+        proposedContent[_hash].rejected = true;
     }
 }
