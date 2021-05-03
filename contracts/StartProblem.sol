@@ -18,7 +18,7 @@ contract StartProblem {
     uint256 MINIMUM_REWARD = 4000;
     uint256 MIN_EXPIRY = 40320; //a week
     uint256 MAX_EXPIRY = 161280; //a month
-    uint256 MAX_STAKE = 5 * 10**21; //5000 max tokens
+    uint256 MAX_STAKE = 3 * 10**21; //3000 max tokens
     IRegistry reg;
 
     mapping(bytes32 => address) public deployedProblem;
@@ -34,9 +34,8 @@ contract StartProblem {
     constructor(
         address _disk,
         address _reg,
-        address _usdc // address _prob,
-    ) // address _cont
-    {
+        address _usdc // address _prob, // address _cont
+    ) {
         usdc = IERC20S(_usdc);
         // prob = IERC20S(_prob);
         reg = IRegistry(_reg);
