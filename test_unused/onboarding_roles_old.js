@@ -4,11 +4,12 @@ const { abi: abiDisk } = require("../artifacts/contracts/tokens/Disk.sol/Disk.js
 
 //to include creation of DAO, content approval processes, and maybe user/DAO token claiming
 describe("Onboarding and Registry v1", function () {
-  let disk, regtoken, probtoken, conttoken, registry;
+  let disk, regtoken, probtoken, conttoken, registry, usdc;
   let admin, publisher, user;
+  let dao, leader1, leader2, editor1;
 
   it("setup localhost", async () => {
-    [admin, publisher, user] = await ethers.getSigners(); //jsonrpc signers from default 20 accounts with 10000 ETH each
+    [admin, publisher, user, leader1, leader2, editor1] = await ethers.getSigners(); //jsonrpc signers from default 20 accounts with 10000 ETH each
   })
 
   xit("setup dao minimal proxy", async () => {
@@ -17,6 +18,12 @@ describe("Onboarding and Registry v1", function () {
   })
 
   it("deploy tokens", async () => {
+    const USDC = await ethers.getContractFactory(
+      "Disk"
+    );
+    usdc = await USDC.connect(admin).deploy(); //mints full supply to deployer
+    await usdc.deployed()
+
     const Disk = await ethers.getContractFactory(
       "Disk"
     );
@@ -51,7 +58,7 @@ describe("Onboarding and Registry v1", function () {
     const Registry = await ethers.getContractFactory(
       "AllRegistry"
     );
-    registry = await Registry.connect(admin).deploy(disk.address,regtoken.address,probtoken.address,conttoken.address); //mints full supply to deployer
+    registry = await Registry.connect(admin).deploy(disk.address,regtoken.address,probtoken.address,conttoken.address); 
     await registry.deployed()
 
     await disk.connect(admin).setRegistry(registry.address)
@@ -60,20 +67,35 @@ describe("Onboarding and Registry v1", function () {
     await conttoken.connect(admin).setRegistry(registry.address)    
   })
 
+  it("deploy DAO", async () => {
+    const DAO = await ethers.getContractFactory(
+      "PubDAO"
+    );
+    dao = await DAO.connect(admin).deploy(disk.address,usdc.address,regtoken.address,probtoken.address,conttoken.address, registry.address, registry.address); 
+    await dao.deployed()
+
+    //set leaders and editors
+    await dao.connect(admin).manageEditor(editor1.getAddress(),true)
+    await dao.connect(admin).manageLeader(leader1.getAddress(),true)
+    await dao.connect(admin).manageLeader(leader2.getAddress(),true)
+  })
+
+  it("test DAO buy reg token", async () => {
+    //normally this would have to be earned
+    await disk.connect(admin).transfer(dao.address,ethers.utils.parseUnits("500000",18)) 
+    await dao.connect(admin).buyTokens(ethers.utils.parseUnits("1",18),ethers.BigNumber.from("0"))
+  })
+
   it("register DAO", async () => {
-    await regtoken.connect(publisher).approve(registry.address,ethers.utils.parseUnits("1000",18))
-    await registry.connect(publisher).registerPub()
-    const isPub = await registry.checkPubDAO(publisher.getAddress())
+    await dao.connect(admin).register()
+    const isPub = await registry.checkPubDAO(dao.address)
     expect(isPub).to.equal(true);
     // console.log("publisher state: ", isPub)
   })
 
   it("claim weekly DAO and purchase tokens", async () => {
-    await registry.connect(publisher).claimWeeklyPub()
-    await expect(registry.connect(publisher).claimWeeklyPub()).to.be.revertedWith("pub has already claimed this week");
-
-    await disk.connect(publisher).approve(registry.address,ethers.utils.parseUnits("100000",18))
-    await registry.connect(publisher).buyTokens(ethers.utils.parseUnits("1",18), ethers.BigNumber.from("2"))
+    await dao.connect(leader1).claimTokens()
+    await expect(dao.connect(leader1).claimTokens()).to.be.revertedWith("pub has already claimed this week");
   })
   
   it("claim weekly user", async () => { 

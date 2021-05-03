@@ -209,6 +209,10 @@ contract ProblemNFT is ERC721 {
         return writers.length;
     }
 
+    function getExpiry() external view returns (uint256) {
+        return EXPIRY;
+    }
+
     function fullMul(uint256 x, uint256 y)
         public
         pure

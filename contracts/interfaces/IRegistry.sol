@@ -8,4 +8,9 @@ interface IRegistry {
     function buyTokens(uint256 _tokens, uint256 _tokenType) external;
 
     function claimWeeklyPub() external;
+
+    function checkMinimum(uint256 _tokenType)
+        external
+        view
+        returns (uint256 multiplier);
 }

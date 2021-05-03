@@ -2,8 +2,8 @@
   "_format": "hh-sol-cache-2",
   "files": {
     "C:\\Users\\Andrew\\Documents\\Blockchain\\diskovery\\contracts\\AllRegistry.sol": {
-      "lastModificationDate": 1620017345292,
-      "contentHash": "7c765f9626f561dbc86c6854d442795f",
+      "lastModificationDate": 1620052069655,
+      "contentHash": "ee08b4ee1e0e2bdcb064b6bbe75c8247",
       "sourceName": "contracts/AllRegistry.sol",
       "solcConfig": {
         "version": "0.7.0",
@@ -30,7 +30,8 @@
       "imports": [
         "./PubDAO.sol",
         "./interfaces/IERC20S.sol",
-        "@openzeppelin/contracts/math/SafeMath.sol"
+        "@openzeppelin/contracts/math/SafeMath.sol",
+        "hardhat/console.sol"
       ],
       "versionPragmas": [
         ">=0.6.0"
@@ -40,8 +41,8 @@
       ]
     },
     "C:\\Users\\Andrew\\Documents\\Blockchain\\diskovery\\contracts\\PubDAO.sol": {
-      "lastModificationDate": 1620018577484,
-      "contentHash": "ba6a771d7693222d224f817cf102889c",
+      "lastModificationDate": 1620051927939,
+      "contentHash": "ef2958cb61751bfb29d74b1c0a9016f4",
       "sourceName": "contracts/PubDAO.sol",
       "solcConfig": {
         "version": "0.7.0",
@@ -70,7 +71,9 @@
         "./interfaces/IERC20S.sol",
         "./interfaces/IRegistry.sol",
         "./interfaces/IProblemNFT.sol",
-        "./interfaces/IStartProblem.sol"
+        "./interfaces/IStartProblem.sol",
+        "@openzeppelin/contracts/math/SafeMath.sol",
+        "hardhat/console.sol"
       ],
       "versionPragmas": [
         ">=0.6.0"
@@ -186,8 +189,8 @@
       ]
     },
     "C:\\Users\\Andrew\\Documents\\Blockchain\\diskovery\\contracts\\interfaces\\IRegistry.sol": {
-      "lastModificationDate": 1619994531327,
-      "contentHash": "68b0587795f0b8723f280fd14e61f83e",
+      "lastModificationDate": 1620049513042,
+      "contentHash": "88efa7bf4bc5a775e111ff9949c790d0",
       "sourceName": "contracts/interfaces/IRegistry.sol",
       "solcConfig": {
         "version": "0.7.0",
@@ -220,8 +223,8 @@
       ]
     },
     "C:\\Users\\Andrew\\Documents\\Blockchain\\diskovery\\contracts\\interfaces\\IProblemNFT.sol": {
-      "lastModificationDate": 1619994087726,
-      "contentHash": "8c61378ee249e7b6ab29052a70797d58",
+      "lastModificationDate": 1620051026138,
+      "contentHash": "6e1656616583c4ae1ac66a25f9cdc7bc",
       "sourceName": "contracts/interfaces/IProblemNFT.sol",
       "solcConfig": {
         "version": "0.7.0",
@@ -534,8 +537,8 @@
       ]
     },
     "C:\\Users\\Andrew\\Documents\\Blockchain\\diskovery\\contracts\\tokens\\Disk.sol": {
-      "lastModificationDate": 1619994102793,
-      "contentHash": "923234fb919641cfe945a5d0e8d372cd",
+      "lastModificationDate": 1620048680270,
+      "contentHash": "46fc781303c971568125d432900e0e00",
       "sourceName": "contracts/tokens/Disk.sol",
       "solcConfig": {
         "version": "0.7.0",
@@ -896,8 +899,8 @@
       ]
     },
     "C:\\Users\\Andrew\\Documents\\Blockchain\\diskovery\\contracts\\StartProblem.sol": {
-      "lastModificationDate": 1620017025217,
-      "contentHash": "1a210745c92fc4a821a59235517dfcd6",
+      "lastModificationDate": 1620051746418,
+      "contentHash": "8334cdbc8effe641c2280ddf186bf20f",
       "sourceName": "contracts/StartProblem.sol",
       "solcConfig": {
         "version": "0.7.0",
@@ -935,8 +938,8 @@
       ]
     },
     "C:\\Users\\Andrew\\Documents\\Blockchain\\diskovery\\contracts\\ProblemNFT.sol": {
-      "lastModificationDate": 1620015611659,
-      "contentHash": "62259b92d57d39c108e76dc53137d9d4",
+      "lastModificationDate": 1620050584224,
+      "contentHash": "cc7adf2ef222666707d4aa79387edf4c",
       "sourceName": "contracts/ProblemNFT.sol",
       "solcConfig": {
         "version": "0.7.0",

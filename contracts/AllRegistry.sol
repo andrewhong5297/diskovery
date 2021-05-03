@@ -4,6 +4,8 @@ import "./PubDAO.sol";
 import "./interfaces/IERC20S.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
 
+import "hardhat/console.sol";
+
 //should people be allowed to buy disk tokens at a base USDC price of 1 cent? meaning each 1000 tokens is 10 dollars...
 //need to add setter functions for governance of base prices and claims
 contract AllRegistry {
@@ -64,6 +66,22 @@ contract AllRegistry {
         }
     }
 
+    function checkMinimum(uint256 _tokenType)
+        external
+        view
+        returns (uint256 multiplier)
+    {
+        if (_tokenType == 0) {
+            multiplier = REG_TOKEN_MINIMUM;
+        } else if (_tokenType == 1) {
+            multiplier = PROB_TOKEN_MINIMUM;
+        } else if (_tokenType == 2) {
+            multiplier = CONT_TOKEN_MINIMUM;
+        } else {
+            revert("invalid token type");
+        }
+    }
+
     function buyTokens(uint256 _tokens, uint256 _tokenType) external {
         uint256 multiplier = 0;
         IERC20S token = IERC20S(address(0));
@@ -121,6 +139,7 @@ contract AllRegistry {
             userClaimTracking[msg.sender] <= startTime,
             "user has already claimed this week"
         );
+        console.log(C_USER_TOKEN);
         disk.mint(msg.sender, C_USER_TOKEN);
         userClaimTracking[msg.sender] = block.timestamp;
     }

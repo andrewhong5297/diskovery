@@ -73,8 +73,11 @@ contract StartProblem {
         require(_expiry <= MAX_EXPIRY && _expiry >= MIN_EXPIRY);
         require(reg.checkPubDAO(msg.sender) == true);
 
-        prob.transferFrom(msg.sender, address(this), 10**18);
-        usdc.transferFrom(msg.sender, address(this), _minimumReward);
+        require(prob.transferFrom(msg.sender, address(this), 10**18), "prob");
+        require(
+            usdc.transferFrom(msg.sender, address(this), _minimumReward),
+            "usdc"
+        );
 
         //add CREATE2 in here later
         ProblemNFT newProblem =

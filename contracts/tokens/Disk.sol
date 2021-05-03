@@ -8,7 +8,7 @@ contract Disk is ERC20 {
 
     constructor() ERC20("Disk", "DK") {
         admin = msg.sender;
-        _mint(msg.sender, 10**23); //at least 100,000
+        _mint(msg.sender, 10**25); //at least 10,000,000
     }
 
     function setRegistry(address _registry) external {

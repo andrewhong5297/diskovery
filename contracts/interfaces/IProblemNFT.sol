@@ -8,4 +8,6 @@ interface IProblemNFT {
         string calldata _name,
         bytes32 _contentHash
     ) external returns (bool);
+
+    function getExpiry() external view returns (uint256);
 }

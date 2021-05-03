@@ -5,14 +5,16 @@ const { abi: abiProblem } = require("../artifacts/contracts/ProblemNFT.sol/Probl
 const fs = require("fs"); 
 const BN = require('bn.js');
 
-describe("ProblemNFT v1", function () {
+describe("Diskover Full Test v1", function () {
   let problemNFT, startProblem, usdc;
   let disk, regtoken, probtoken, conttoken, registry;
   let problemHash, expiry;
-  let writer1, writer2, publisher, user, admin;
+  let writer1, writer2, reader, admin;
+  let contentHash, contentHash2;
+  let dao, adminDao, leader1, leader2, editor1;
 
   it("setup localhost", async () => {
-    [writer1, writer2, publisher, user, admin] = await ethers.getSigners(); //jsonrpc signers from default 20 accounts with 10000 ETH each
+    [writer1, writer2, reader, admin, adminDao, leader1, leader2, editor1] = await ethers.getSigners(); //jsonrpc signers from default 20 accounts with 10000 ETH each
   })
 
   it("deploy tokens", async () => {
@@ -39,12 +41,7 @@ describe("ProblemNFT v1", function () {
     );
     conttoken = await ContToken.connect(admin).deploy(); //mints full supply to deployer
     await conttoken.deployed()
-    
-    await disk.connect(admin).transfer(publisher.getAddress(),ethers.utils.parseUnits("1000",18))
-    await regtoken.connect(admin).transfer(publisher.getAddress(),ethers.utils.parseUnits("10",18))
-    await probtoken.connect(admin).transfer(publisher.getAddress(),ethers.utils.parseUnits("10",18))
-    await conttoken.connect(admin).transfer(publisher.getAddress(),ethers.utils.parseUnits("10",18))
-  })
+    })
 
   it("deploy registry", async () => {
     const Registry = await ethers.getContractFactory(
@@ -57,29 +54,6 @@ describe("ProblemNFT v1", function () {
     await regtoken.connect(admin).setRegistry(registry.address)
     await probtoken.connect(admin).setRegistry(registry.address)
     await conttoken.connect(admin).setRegistry(registry.address)    
-  })
-
-  //dao creation, roles setup, funding,
-  
-  it("register DAO", async () => {
-    await regtoken.connect(publisher).approve(registry.address,ethers.utils.parseUnits("1000",18))
-    await registry.connect(publisher).registerPub()
-    const isPub = await registry.checkPubDAO(publisher.getAddress())
-    expect(isPub).to.equal(true);
-  })
-
-  it("claim weekly DAO and purchase tokens", async () => {
-    await registry.connect(publisher).claimWeeklyPub()
-    await expect(registry.connect(publisher).claimWeeklyPub()).to.be.revertedWith("pub has already claimed this week");
-
-    await disk.connect(publisher).approve(registry.address,ethers.utils.parseUnits("100000",18))
-    await registry.connect(publisher).buyTokens(ethers.utils.parseUnits("1",18), ethers.BigNumber.from("2"))
-  })
-  
-  it("claim weekly user", async () => { 
-    await registry.connect(user).claimWeeklyUser()
-    await expect(registry.connect(user).claimWeeklyUser()).to.be.revertedWith("user has already claimed this week");
-    await disk.connect(admin).transfer(user.getAddress(),ethers.utils.parseUnits("5000",18)) //for staking later
   })
 
   it("deploy problem factory", async () => {
@@ -97,55 +71,100 @@ describe("ProblemNFT v1", function () {
     await startProblem.deployed()
   });
 
-  //dao create problem, submit
+  //dao creation, roles setup, funding,
+  it("deploy DAO", async () => {
+    const DAO = await ethers.getContractFactory(
+      "PubDAO"
+    );
+    dao = await DAO.connect(adminDao).deploy(disk.address,usdc.address,regtoken.address,probtoken.address,conttoken.address, registry.address, startProblem.address); 
+    await dao.deployed()
 
-  it("deploy a new problem", async () => {    
-    await usdc.connect(admin).transfer(publisher.getAddress(), ethers.utils.parseUnits("4000",18))
+    //set leaders and editors
+    await dao.connect(adminDao).manageEditor(editor1.getAddress(),true)
+    await dao.connect(adminDao).manageLeader(leader1.getAddress(),true)
+    await dao.connect(adminDao).manageLeader(leader2.getAddress(),true)
+  })
 
+  it("test DAO buy reg token", async () => {
+    //normally this would have to be earned
+    await disk.connect(admin).transfer(dao.address,ethers.utils.parseUnits("500000",18)) 
+    await dao.connect(adminDao).buyTokens(ethers.utils.parseUnits("1",18),ethers.BigNumber.from("0"))
+  })
+
+  it("register DAO", async () => {
+    await dao.connect(adminDao).register()
+    const isPub = await registry.checkPubDAO(dao.address)
+    expect(isPub).to.equal(true);
+    // console.log("publisher state: ", isPub)
+  })
+
+  it("claim weekly DAO and purchase tokens", async () => {
+    await dao.connect(leader1).claimTokens()
+    await expect(dao.connect(leader1).claimTokens()).to.be.revertedWith("pub has already claimed this week");
+  })
+  
+  it("claim weekly reader/writer", async () => { 
+    await registry.connect(reader).claimWeeklyUser()
+    await registry.connect(writer1).claimWeeklyUser()
+    await registry.connect(writer2).claimWeeklyUser()
+
+    await expect(registry.connect(reader).claimWeeklyUser()).to.be.revertedWith("user has already claimed this week");
+  })
+
+  it("dao creates, votes, and deploys a new problem", async () => {    
     const topic = -1234;
     problemHash = "0x"+(new BN(String(topic))).toTwos(256).toString('hex',64);
     expiry = "50000"; //about a week or so
+    reward = ethers.utils.parseUnits("4000",18)
 
-    await probtoken.connect(publisher).approve(startProblem.address, ethers.utils.parseUnits("100",18))
-    await usdc.connect(publisher).approve(startProblem.address, ethers.utils.parseUnits("400000",18))
-    await startProblem.connect(publisher).createProblem(problemHash,ethers.utils.parseUnits("4000",18),ethers.BigNumber.from(expiry),"What is our motto?")
+    //this would normally be funded by dao themselves
+    await usdc.connect(admin).transfer(dao.address, reward)
+
+    await dao.connect(leader1).suggestProblem(problemHash, reward, "What is our motto?", expiry)
+    await dao.connect(leader2).voteProblem(problemHash,true);
+    await dao.connect(editor1).voteProblem(problemHash,true);
 
     const problemAddress = await startProblem.getProblem(problemHash)
     problemNFT = new ethers.Contract(
       problemAddress,
       abiProblem,
-      publisher)    
-    
+      adminDao)    
+
     const problemBalance = await usdc.balanceOf(problemAddress);
-    console.log("new problemNFT has USDC balance of: ", problemBalance.toString());
-    // console.log(problemNFT)
+    expect(problemBalance).to.equal(reward)
   })
+
+  it("writers submits content", async () => {
+    const num = 1559;
+    contentHash = "0x"+(new BN(String(num))).toTwos(256).toString('hex',64);
+    const _stake = ethers.utils.parseUnits("500",18);
+    await disk.connect(writer1).approve(dao.address,_stake)
+    //expiry should be pulled from contract as 
+    await dao.connect(writer1).submitContent(contentHash,"Into the Ether",problemNFT.address,_stake,problemNFT.getExpiry()) 
     
-  //user submit content, dao to review and then publish content
+    const num2 = 2059;
+    contentHash2 = "0x"+(new BN(String(num2))).toTwos(256).toString('hex',64);
+    const _stake2 = ethers.utils.parseUnits("300",18);
+    await disk.connect(writer2).approve(dao.address,_stake2)
+    await dao.connect(writer2).submitContent(contentHash2,"Out of the Ether",problemNFT.address,_stake2,problemNFT.getExpiry()) 
+  })
 
   it("publish 2 pieces of content", async () => {
-    await conttoken.connect(publisher).approve(problemNFT.address,ethers.utils.parseUnits("10",18))
-
-    const num = 1559;
-    const contentHash = "0x"+(new BN(String(num))).toTwos(256).toString('hex',64);
-    await problemNFT.connect(publisher).newContent(writer1.getAddress(),"Into the Ether",contentHash)
-
-    const num2 = 2059;
-    const contentHash2 = "0x"+(new BN(String(num2))).toTwos(256).toString('hex',64);
-    await problemNFT.connect(publisher).newContent(writer2.getAddress(),"Out of the Ether",contentHash2)
+    await dao.connect(editor1).publishContent(contentHash);
+    await dao.connect(editor1).publishContent(contentHash2);
 
     const balance = await problemNFT.balanceOf(writer1.getAddress())
     expect(parseInt(balance.toString())).to.equal(1)
 
     const content_count = await problemNFT.getContentCount();
-    const content = await problemNFT.getContent(ethers.BigNumber.from(content_count)) 
-    // console.log(content)
+    expect(parseInt(content_count.toString())).to.equal(2);
+    // const content = await problemNFT.getContent(ethers.BigNumber.from(content_count)) 
   })
 
-  it("user stakes content", async () => {
-    await disk.connect(user).approve(problemNFT.address,ethers.utils.parseUnits("5000",18))
-    await problemNFT.connect(user).stakeContent(ethers.BigNumber.from("1000"),ethers.BigNumber.from("1"))
-    await problemNFT.connect(user).stakeContent(ethers.BigNumber.from("500"),ethers.BigNumber.from("2"))
+  it("reader stakes content", async () => {
+    await disk.connect(reader).approve(problemNFT.address,ethers.utils.parseUnits("5000",18))
+    await problemNFT.connect(reader).stakeContent(ethers.BigNumber.from("1000"),ethers.BigNumber.from("1"))
+    await problemNFT.connect(reader).stakeContent(ethers.BigNumber.from("500"),ethers.BigNumber.from("2"))
   })
 
   it("normalize rewards and claim writer rewards", async () => {
@@ -153,13 +172,11 @@ describe("ProblemNFT v1", function () {
     await network.provider.send("evm_setNextBlockTimestamp", [Date.now()+parseInt(expiry)+100])
     await network.provider.send("evm_mine")
 
-    await problemNFT.connect(publisher).rewardSplit() //normalizes rewards
+    await problemNFT.connect(writer1).rewardSplit() //normalizes rewards, called by anyone
     await problemNFT.connect(writer1).claimWinnings() 
 
     const balance = await usdc.balanceOf(writer1.getAddress());
     expect(balance.toString()).to.equal("2666666666666666666666")
-    console.log("writer1 usdc balance post claim: ", balance.toString())
-
-    //check everyone's balances of disk
+    // console.log("writer1 usdc balance post claim: ", balance.toString())
   })
 });
