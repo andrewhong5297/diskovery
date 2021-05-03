@@ -28,6 +28,7 @@ contract PubDAO is AccessControl {
     IStartProblem startProblem;
 
     uint256 quorum = 0;
+    uint256 MIN_CONTENT_STAKE = 2 * 10**20; //starts at 200 disk minimum
 
     mapping(bytes32 => Content) public proposedContent;
     mapping(bytes32 => Problem) public proposedProblem;
@@ -86,8 +87,13 @@ contract PubDAO is AccessControl {
     }
 
     function withdraw(address _to, uint256 _amount) external {
-        require(hasRole(ADMIN_ROLE, msg.sender), "not admin, can't withdraw");
+        require(hasRole(ADMIN_ROLE, msg.sender), "not admin");
         usdc.transfer(_to, _amount);
+    }
+
+    function setContentStake(uint256 _min) external {
+        require(hasRole(ADMIN_ROLE, msg.sender), "not admin");
+        MIN_CONTENT_STAKE = _min;
     }
 
     /*
@@ -246,6 +252,7 @@ contract PubDAO is AccessControl {
             proposedContent[_contentHash].writer == address(0),
             "there is already content with this hash"
         );
+        require(_stake >= MIN_CONTENT_STAKE, "not enough stake");
         disk.transferFrom(msg.sender, address(this), _stake);
         proposedContent[_contentHash] = Content(
             _contentHash,

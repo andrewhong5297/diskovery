@@ -41,8 +41,8 @@
       ]
     },
     "C:\\Users\\Andrew\\Documents\\Blockchain\\diskovery\\contracts\\PubDAO.sol": {
-      "lastModificationDate": 1620051927939,
-      "contentHash": "ef2958cb61751bfb29d74b1c0a9016f4",
+      "lastModificationDate": 1620052440528,
+      "contentHash": "eb6d971979debf104ee351bf8722c9a4",
       "sourceName": "contracts/PubDAO.sol",
       "solcConfig": {
         "version": "0.7.0",
