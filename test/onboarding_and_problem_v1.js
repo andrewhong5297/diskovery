@@ -58,13 +58,14 @@ describe("ProblemNFT v1", function () {
     await probtoken.connect(admin).setRegistry(registry.address)
     await conttoken.connect(admin).setRegistry(registry.address)    
   })
+
+  //dao creation, roles setup, funding,
   
   it("register DAO", async () => {
     await regtoken.connect(publisher).approve(registry.address,ethers.utils.parseUnits("1000",18))
     await registry.connect(publisher).registerPub()
     const isPub = await registry.checkPubDAO(publisher.getAddress())
     expect(isPub).to.equal(true);
-    // console.log("publisher state: ", isPub)
   })
 
   it("claim weekly DAO and purchase tokens", async () => {
@@ -96,6 +97,8 @@ describe("ProblemNFT v1", function () {
     await startProblem.deployed()
   });
 
+  //dao create problem, submit
+
   it("deploy a new problem", async () => {    
     await usdc.connect(admin).transfer(publisher.getAddress(), ethers.utils.parseUnits("4000",18))
 
@@ -117,6 +120,8 @@ describe("ProblemNFT v1", function () {
     console.log("new problemNFT has USDC balance of: ", problemBalance.toString());
     // console.log(problemNFT)
   })
+    
+  //user submit content, dao to review and then publish content
 
   it("publish 2 pieces of content", async () => {
     await conttoken.connect(publisher).approve(problemNFT.address,ethers.utils.parseUnits("10",18))
@@ -143,7 +148,7 @@ describe("ProblemNFT v1", function () {
     await problemNFT.connect(user).stakeContent(ethers.BigNumber.from("500"),ethers.BigNumber.from("2"))
   })
 
-  it("normalize rewards and claim writer claim rewards", async () => {
+  it("normalize rewards and claim writer rewards", async () => {
     //move time forward past expiry
     await network.provider.send("evm_setNextBlockTimestamp", [Date.now()+parseInt(expiry)+100])
     await network.provider.send("evm_mine")
@@ -154,5 +159,7 @@ describe("ProblemNFT v1", function () {
     const balance = await usdc.balanceOf(writer1.getAddress());
     expect(balance.toString()).to.equal("2666666666666666666666")
     console.log("writer1 usdc balance post claim: ", balance.toString())
+
+    //check everyone's balances of disk
   })
 });
