@@ -4,10 +4,10 @@ With Diskover, communities can stake on problems, then creators can publish cont
 
 This is a completely different way of managing and discovering content than the publication style business models of today. Publications will always grow out of their niche, communities will always be focused on their specific problems/products.
 
-### Smart Contract Architecture
+### Smart Contract Architecture (v1 + v2)
 
-![alt text](https://github.com/andrewhong5297/diskovery/blob/master/arch_v1.jpg)
+![alt text](https://github.com/andrewhong5297/diskovery/blob/master/arch_v2.jpg)
 
-### User Flows
+### User Flows (v1 only)
 
-![alt text](https://github.com/andrewhong5297/diskovery/blob/master/user_flow.jpg)
+![alt text](https://github.com/andrewhong5297/diskovery/blob/master/user_flow_v1.jpg)
