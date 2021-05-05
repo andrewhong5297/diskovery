@@ -13,6 +13,8 @@ import "hardhat/console.sol";
 contract PubDAOclones is AccessControl {
     using SafeMath for uint256;
 
+    string public pubName;
+
     //admin has master control on roles
     bytes32 public constant LEADER_ROLE = keccak256("LEADER"); //votes on content and transactions (purchase of registration, problem, and content tokens)
     bytes32 public constant EDITOR_ROLE = keccak256("EDITOR"); //votes on content and calls final publication to NFT
@@ -72,7 +74,8 @@ contract PubDAOclones is AccessControl {
         // address _probToken,
         // address _contToken,
         address _registry,
-        address _startProblem
+        address _startProblem,
+        string memory _pubName
     ) public {
         disk = IERC20S(_disk);
         usdc = IERC20S(_usdc);
@@ -81,9 +84,10 @@ contract PubDAOclones is AccessControl {
         // cont = IERC20S(_contToken);
         registry = IRegistry(_registry);
         startProblem = IStartProblem(_startProblem);
+        _setupRole(ADMIN_ROLE, msg.sender);
         _setRoleAdmin(LEADER_ROLE, ADMIN_ROLE);
         _setRoleAdmin(EDITOR_ROLE, ADMIN_ROLE);
-        _setupRole(ADMIN_ROLE, msg.sender);
+        pubName = _pubName;
     }
 
     function withdraw(address _to, uint256 _amount) external {
@@ -145,7 +149,7 @@ contract PubDAOclones is AccessControl {
 
     function register() external {
         require(hasRole(ADMIN_ROLE, msg.sender) == true, "Not admin");
-
+        // add in _daoName later
         // reg.approve(address(registry), 10**18);
         registry.registerPub();
     }

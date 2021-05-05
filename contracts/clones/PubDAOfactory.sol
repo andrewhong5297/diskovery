@@ -14,6 +14,8 @@ contract PubDAOfactory {
     address registry;
     address startProblem;
 
+    mapping(string => address) projectSearch;
+
     constructor(
         address _disk,
         address _usdc,
@@ -33,7 +35,7 @@ contract PubDAOfactory {
         startProblem = _startProblem;
     }
 
-    function createDao() external returns (address) {
+    function createDao(string memory _daoName) external returns (address) {
         address clone = Clones.clone(tokenImplementation);
         PubDAOclones(clone).initialize(
             disk,
@@ -42,8 +44,14 @@ contract PubDAOfactory {
             // probToken,
             // contToken,
             registry,
-            startProblem
+            startProblem,
+            _daoName
         );
+        projectSearch[_daoName] = clone;
         return clone;
+    }
+
+    function getDao(string memory _daoName) external view returns (address) {
+        return projectSearch[_daoName];
     }
 }

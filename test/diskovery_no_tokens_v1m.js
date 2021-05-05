@@ -79,11 +79,11 @@ describe("Diskover No_Tokens Proxy Test v1", function () {
     daoMProxy = await DAOFACTORY.connect(adminDao).deploy(disk.address, usdc.address, registry.address, startProblem.address); //removed regtoken.address,probtoken.address,conttoken.address
     await daoMProxy.deployed()
 
-    dao = await daoMProxy.connect(adminDao).createDao();
-    // console.log(dao)
-    // await dao.deployed()
-    dao = await ethers.getContractAt("PubDAOclones", daoMProxy.address) //this is for upgradeProxy, we need minimal proxy pointer
-    console.log(dao)
+    const daoCreated = await daoMProxy.connect(adminDao).createDao("First Dao");
+    console.log(daoCreated)
+    const daoAddress = await daoMProxy.connect(adminDao).getDao("First Dao");
+    console.log(daoAddress)
+    dao = await ethers.getContractAt("PubDAOclones", daoAddress) 
     
     //set leaders and editors
     await dao.connect(adminDao).manageEditor(editor1.getAddress(),true)

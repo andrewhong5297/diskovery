@@ -1081,8 +1081,8 @@
       ]
     },
     "C:\\Users\\Andrew\\Documents\\Blockchain\\diskovery\\contracts\\clones\\PubDAOclones.sol": {
-      "lastModificationDate": 1620086958020,
-      "contentHash": "3bd94db6537721dbffccad6852edb124",
+      "lastModificationDate": 1620216067229,
+      "contentHash": "28c64e12300215980b1703d8080e81df",
       "sourceName": "contracts/clones/PubDAOclones.sol",
       "solcConfig": {
         "version": "0.7.0",
@@ -1123,8 +1123,8 @@
       ]
     },
     "C:\\Users\\Andrew\\Documents\\Blockchain\\diskovery\\contracts\\clones\\PubDAOfactory.sol": {
-      "lastModificationDate": 1620087557248,
-      "contentHash": "9a19a33544720331804a8dbc26dc57f5",
+      "lastModificationDate": 1620215773532,
+      "contentHash": "4938b2fabc1cc68701d1fac4d466f782",
       "sourceName": "contracts/clones/PubDAOfactory.sol",
       "solcConfig": {
         "version": "0.7.0",
