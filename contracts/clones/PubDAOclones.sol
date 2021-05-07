@@ -14,6 +14,7 @@ contract PubDAOclones is AccessControl {
     using SafeMath for uint256;
 
     string public pubName;
+    bool init = false;
 
     //admin has master control on roles
     bytes32 public constant LEADER_ROLE = keccak256("LEADER"); //votes on content and transactions (purchase of registration, problem, and content tokens)
@@ -75,8 +76,11 @@ contract PubDAOclones is AccessControl {
         // address _contToken,
         address _registry,
         address _startProblem,
-        string memory _pubName
+        string memory _pubName,
+        address _owner
     ) public {
+        require(init == false);
+        init = true;
         disk = IERC20S(_disk);
         usdc = IERC20S(_usdc);
         // reg = IERC20S(_regToken);
@@ -84,7 +88,7 @@ contract PubDAOclones is AccessControl {
         // cont = IERC20S(_contToken);
         registry = IRegistry(_registry);
         startProblem = IStartProblem(_startProblem);
-        _setupRole(ADMIN_ROLE, msg.sender);
+        _setupRole(ADMIN_ROLE, _owner);
         _setRoleAdmin(LEADER_ROLE, ADMIN_ROLE);
         _setRoleAdmin(EDITOR_ROLE, ADMIN_ROLE);
         pubName = _pubName;

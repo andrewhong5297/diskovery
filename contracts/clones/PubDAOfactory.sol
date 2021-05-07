@@ -45,7 +45,8 @@ contract PubDAOfactory {
             // contToken,
             registry,
             startProblem,
-            _daoName
+            _daoName,
+            msg.sender
         );
         projectSearch[_daoName] = clone;
         return clone;

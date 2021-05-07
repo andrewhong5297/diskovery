@@ -80,7 +80,7 @@ describe("Diskover No_Tokens Proxy Test v1", function () {
     await daoMProxy.deployed()
 
     const daoCreated = await daoMProxy.connect(adminDao).createDao("First Dao");
-    console.log(daoCreated)
+    // console.log(daoCreated)
     const daoAddress = await daoMProxy.connect(adminDao).getDao("First Dao");
     console.log(daoAddress)
     dao = await ethers.getContractAt("PubDAOclones", daoAddress) 
@@ -97,7 +97,7 @@ describe("Diskover No_Tokens Proxy Test v1", function () {
   //   await dao.connect(adminDao).buyTokens(ethers.utils.parseUnits("1",18),ethers.BigNumber.from("0"))
   // })
 
-  xit("register DAO", async () => {
+  it("register DAO", async () => {
     await dao.connect(adminDao).register()
     const isPub = await registry.checkPubDAO(dao.address)
     expect(isPub).to.equal(true);
